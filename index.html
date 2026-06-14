@@ -15,7 +15,7 @@
       margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--text);
       background:radial-gradient(circle at top left,rgba(255,255,255,.9),transparent 30%),
       linear-gradient(135deg,var(--blue) 0%,var(--dark) 48%,var(--red) 100%);
-      min-height:100vh;padding:10px;
+      min-height:100vh;padding:calc(18px + env(safe-area-inset-top)) 10px calc(18px + env(safe-area-inset-bottom));
     }
     .app{max-width:760px;margin:0 auto 40px}
     .hero,.card{background:var(--card);border-radius:22px;box-shadow:0 10px 28px rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.75)}
@@ -167,8 +167,16 @@
       50%{transform:scale(1.08);opacity:.92}
     }
 
+    
+    @supports (padding: max(0px)) {
+      body {
+        padding-top: max(18px, calc(18px + env(safe-area-inset-top)));
+        padding-bottom: max(18px, calc(18px + env(safe-area-inset-bottom)));
+      }
+    }
+
     @media(max-width:560px){
-      body{padding:8px}.card{padding:12px}h1{font-size:1.18rem}.score{font-size:2.35rem}
+      body{padding:calc(18px + env(safe-area-inset-top)) 8px calc(18px + env(safe-area-inset-bottom))}.card{padding:12px}h1{font-size:1.18rem}.score{font-size:2.35rem}
       .grid2{grid-template-columns:1fr}.scoreboard{gap:8px}button{font-size:.9rem;padding:12px 8px}
       .icon-grid{grid-template-columns:repeat(4,1fr)!important}
       .team{padding:10px}.teamName{font-size:.86rem}
@@ -262,7 +270,7 @@
 
   <div class="card">
     <h2 class="title">Score a Hand</h2>
-    <div class="small">Select who won the hand, enter the dots left in the losing teamâs hands, and the next premio applies automatically when premios are on.</div>
+    <div class="small">Select who won the hand, enter the dots left in the losing team’s hands, and the next premio applies automatically when premios are on.</div>
 
     <div style="margin-top:10px">
       <label>Who gets the points?</label>
@@ -283,7 +291,7 @@
         <select id="bonusType" onchange="bonusChanged()">
           <option value="none" data-points="0">None</option>
           <option value="chuchazo" data-points="100">Chuchazo +100</option>
-          <option value="capicu" data-points="100">CapicÃº +100</option>
+          <option value="capicu" data-points="100">Capicú +100</option>
           <option value="dominao" data-points="0">Dominao +0</option>
           <option value="trancado" data-points="0">Trancado / Tranque +0</option>
           <option value="custom" data-points="0">Custom</option>
@@ -309,7 +317,7 @@
         <select id="manualReason">
           <option>Manual adjustment</option>
           <option>Chuchazo</option>
-          <option>CapicÃº</option>
+          <option>Capicú</option>
           <option>Dominao</option>
           <option>Trancado / Tranque</option>
           <option>Penalty</option>
@@ -379,20 +387,20 @@
   
   <div class="celebration" id="celebrationOverlay">
     <div class="flag-rain">
-      <div class="flag-fall">ðµð·</div>
-      <div class="flag-fall">ðµð·</div>
-      <div class="flag-fall">ðµð·</div>
-      <div class="flag-fall">ðµð·</div>
-      <div class="flag-fall">ðµð·</div>
-      <div class="flag-fall">ðµð·</div>
-      <div class="flag-fall">ðµð·</div>
-      <div class="flag-fall">ðµð·</div>
-      <div class="flag-fall">ðµð·</div>
-      <div class="flag-fall">ðµð·</div>
-      <div class="flag-fall">ðµð·</div>
+      <div class="flag-fall">🇵🇷</div>
+      <div class="flag-fall">🇵🇷</div>
+      <div class="flag-fall">🇵🇷</div>
+      <div class="flag-fall">🇵🇷</div>
+      <div class="flag-fall">🇵🇷</div>
+      <div class="flag-fall">🇵🇷</div>
+      <div class="flag-fall">🇵🇷</div>
+      <div class="flag-fall">🇵🇷</div>
+      <div class="flag-fall">🇵🇷</div>
+      <div class="flag-fall">🇵🇷</div>
+      <div class="flag-fall">🇵🇷</div>
     </div>
     <div class="celebrate-center">
-      <div class="celebrate-flags">ðµð· &#x1F1F5;&#x1F1F7; &#x1F1F5;&#x1F1F7;</div>
+      <div class="celebrate-flags">🇵🇷 &#x1F1F5;&#x1F1F7; &#x1F1F5;&#x1F1F7;</div>
       <h2 class="celebrate-title" id="celebrateWinnerName">Winner!</h2>
       <div class="celebrate-sub">&iexcl;Ganaron! Domino Boricua champions</div>
       <div class="coqui-wrap">
@@ -683,7 +691,7 @@ function loadAutoSave(){
 
 
 function showCelebration(winnerName){
-  $("celebrateWinnerName").textContent = "&#x1F3C6; " + winnerName + " Wins! ð";
+  $("celebrateWinnerName").textContent = "&#x1F3C6; " + winnerName + " Wins! 🏆";
   $("celebrationOverlay").classList.add("show");
 }
 function hideCelebration(markDismissed=true){
