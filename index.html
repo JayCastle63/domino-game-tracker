@@ -186,9 +186,9 @@
 <body>
 <div class="app">
   <div class="hero" id="hero">
-    <div class="flag">ðµð· ð² Domino Boricua ð² ðµð·</div>
+    <div class="flag">&#x1F1F5;&#x1F1F7; &#x1F3B2; Domino Boricua &#x1F3B2; &#x1F1F5;&#x1F1F7;</div>
     <h1>Puerto Rican Dominoes Scorekeeper</h1>
-    <div class="sub">Double-six â¢ Quinientos â¢ Premios â¢ Chuchazo â¢ CapicÃº</div>
+    <div class="sub">Double-six &bull; Quinientos &bull; Premios &bull; Chuchazo &bull; Capic&uacute;</div>
   </div>
 
   <div class="card" id="setupCard">
@@ -233,7 +233,7 @@
 
     <div class="hidden" id="setupCollapsed">
       <div class="small">
-        Setup hidden. Target: <strong id="miniTarget">500</strong> â¢ Premios: <strong id="miniPremios">Auto</strong>
+        Setup hidden. Target: <strong id="miniTarget">500</strong> &bull; Premios: <strong id="miniPremios">Auto</strong>
       </div>
       <button class="mini-button" style="margin-top:10px" onclick="showSetup()">Edit Setup</button>
     </div>
@@ -342,13 +342,13 @@
       <div class="small" id="suggestedCountBox" style="text-align:center;display:none;">Suggested Count: <strong id="suggestedCount">0</strong></div>
 
       <div class="grid2 icon-grid" style="grid-template-columns:repeat(4,1fr)">
-        <button class="icon-btn dark" onclick="startCamera()" title="Open Camera">ð·<span class="icon-label">Open</span></button>
-        <button class="icon-btn danger" onclick="closeCamera()" title="Cancel / Close Camera">â<span class="icon-label">Cancel</span></button>
-        <button class="icon-btn green" onclick="capturePhoto()" title="Take Photo">â<span class="icon-label">Photo</span></button>
-        <button class="icon-btn gold" onclick="autoCountPips()" title="Suggest Count from Photo">â¡<span class="icon-label">Suggest</span></button>
-        <button class="icon-btn gray" onclick="undoTap()" title="Undo Tap">â¶<span class="icon-label">Undo</span></button>
-        <button class="icon-btn" onclick="useTapCount()" title="Use Count">â<span class="icon-label">Use</span></button>
-        <button class="icon-btn danger" onclick="resetTapCount()" title="Reset Count">âº<span class="icon-label">Reset</span></button>
+        <button class="icon-btn dark" onclick="startCamera()" title="Open Camera">&#x1F4F7;<span class="icon-label">Open</span></button>
+        <button class="icon-btn danger" onclick="closeCamera()" title="Cancel / Close Camera">&#10005;<span class="icon-label">Cancel</span></button>
+        <button class="icon-btn green" onclick="capturePhoto()" title="Take Photo">&#9679;<span class="icon-label">Photo</span></button>
+        <button class="icon-btn gold" onclick="autoCountPips()" title="Suggest Count from Photo">&#9889;<span class="icon-label">Suggest</span></button>
+        <button class="icon-btn gray" onclick="undoTap()" title="Undo Tap">&#8630;<span class="icon-label">Undo</span></button>
+        <button class="icon-btn" onclick="useTapCount()" title="Use Count">&#10003;<span class="icon-label">Use</span></button>
+        <button class="icon-btn danger" onclick="resetTapCount()" title="Reset Count">&#8634;<span class="icon-label">Reset</span></button>
         <button class="icon-btn gray" onclick="toggleCameraInfo()" title="Info">i<span class="icon-label">Info</span></button>
       </div>
     </div>
@@ -392,13 +392,13 @@
       <div class="flag-fall">ðµð·</div>
     </div>
     <div class="celebrate-center">
-      <div class="celebrate-flags">ðµð· ðµð· ðµð·</div>
+      <div class="celebrate-flags">ðµð· &#x1F1F5;&#x1F1F7; &#x1F1F5;&#x1F1F7;</div>
       <h2 class="celebrate-title" id="celebrateWinnerName">Winner!</h2>
-      <div class="celebrate-sub">Â¡Ganaron! Domino Boricua champions</div>
+      <div class="celebrate-sub">&iexcl;Ganaron! Domino Boricua champions</div>
       <div class="coqui-wrap">
-        <div class="coqui">ð¸</div>
-        <div class="coqui" style="animation-delay:.2s">ð¸</div>
-        <div class="coqui" style="animation-delay:.4s">ð¸</div>
+        <div class="coqui">&#x1F438;</div>
+        <div class="coqui" style="animation-delay:.2s">&#x1F438;</div>
+        <div class="coqui" style="animation-delay:.4s">&#x1F438;</div>
       </div>
       <button class="celebrate-btn" onclick="startNewGame()">Start New Game</button>
       <button class="celebrate-btn" onclick="hideCelebration()" style="background:#5f6b7a;margin-left:8px">Close</button>
@@ -406,7 +406,7 @@
   </div>
 
 
-  <div class="footer">Hecho para la mesa, la familia y el dominÃ³ ðµð·</div>
+  <div class="footer">Hecho para la mesa, la familia y el domin&oacute; &#x1F1F5;&#x1F1F7;</div>
 </div>
 
 <script>
@@ -572,7 +572,7 @@ function scoreHand(){
 
   addScore(team,total,{
     reason:"Hand score",
-    detail:`${dominoPts} domino points${premioPts?" + "+premioPts+" premio":""}${bonusPts?" + "+bonusPts+" "+bonusLabel:""}${note?" â¢ "+note:""}`,
+    detail:`${dominoPts} domino points${premioPts?" + "+premioPts+" premio":""}${bonusPts?" + "+bonusPts+" "+bonusLabel:""}${note?" &bull; "+note:""}`,
     premioIdx
   });
 
@@ -683,7 +683,7 @@ function loadAutoSave(){
 
 
 function showCelebration(winnerName){
-  $("celebrateWinnerName").textContent = "ð " + winnerName + " Wins! ð";
+  $("celebrateWinnerName").textContent = "&#x1F3C6; " + winnerName + " Wins! ð";
   $("celebrationOverlay").classList.add("show");
 }
 function hideCelebration(markDismissed=true){
@@ -731,7 +731,7 @@ function render(){
     recordCompletedGameIfNeeded();
     let winner=state.team1Score>=t&&state.team1Score>=state.team2Score?n1:n2;
     winnerBox.style.display="block";
-    winnerBox.innerHTML="ð "+winner+" wins the game! ðµð·";
+    winnerBox.innerHTML="&#x1F3C6; "+winner+" wins the game! &#x1F1F5;&#x1F1F7;";
     if(!state.celebrationDismissed){
       showCelebration(winner);
     }
@@ -766,7 +766,7 @@ function renderGameTracker(){
         <span>Game ${g.number}: ${g.winner} won</span>
         ${chiva}
       </div>
-      <div class="small">${g.winnerScore} - ${g.loserScore} vs ${g.loser} â¢ ${g.date} ${g.time}</div>
+      <div class="small">${g.winnerScore} - ${g.loserScore} vs ${g.loser} &bull; ${g.date} ${g.time}</div>
     </div>`;
   }).join("");
 }
@@ -779,7 +779,7 @@ function renderHistory(){
 
   $("historyList").innerHTML=state.history.map(h=>{
     const sign=h.points>0?"+":"";
-    return`<div class="historyItem"><strong>${h.teamName}</strong> ${sign}${h.points}<br><span class="small">${h.reason}${h.detail?" â¢ "+h.detail:""} â¢ ${h.time}</span></div>`;
+    return`<div class="historyItem"><strong>${h.teamName}</strong> ${sign}${h.points}<br><span class="small">${h.reason}${h.detail?" &bull; "+h.detail:""} &bull; ${h.time}</span></div>`;
   }).join("");
 }
 
