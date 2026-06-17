@@ -691,7 +691,7 @@ function loadAutoSave(){
 
 
 function showCelebration(winnerName){
-  $("celebrateWinnerName").textContent = "&#x1F3C6; " + winnerName + " Wins! 🏆";
+  $("celebrateWinnerName").innerHTML = "&#x1F3C6; " + winnerName + " Wins! 🏆";
   $("celebrationOverlay").classList.add("show");
 }
 function hideCelebration(markDismissed=true){
