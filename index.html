@@ -17,6 +17,74 @@
     input,select{width:100%;padding:13px;border:2px solid var(--line);border-radius:13px;background:white;font-size:1rem}input:focus,select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,80,164,.15)}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.score-card{position:sticky;top:6px;z-index:10}.scoreboard{display:grid;grid-template-columns:1fr 1fr;gap:10px}.team{text-align:center;background:linear-gradient(180deg,#fff,#eef4ff);border:3px solid var(--blue);border-radius:18px;padding:12px;min-width:0}.team.winning{border-color:var(--gold);box-shadow:0 0 0 4px rgba(245,197,66,.32)}.teamName{font-weight:900;color:var(--dark);word-break:break-word;font-size:.95rem}.score{font-size:2.75rem;font-weight:900;color:var(--red);margin:3px 0}.needed{font-size:.8rem;color:var(--muted)}.progress{height:11px;background:#dce6f5;border-radius:99px;overflow:hidden;margin-top:8px}.bar{height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--red));transition:.2s}
     button{border:0;border-radius:14px;padding:13px 10px;font-weight:900;font-size:.95rem;color:white;background:var(--blue);box-shadow:0 4px 0 rgba(0,0,0,.18);touch-action:manipulation;cursor:pointer}button:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.18)}button:disabled{background:var(--disabled)!important;color:#eef1f5;box-shadow:none;cursor:not-allowed;transform:none}.red{background:var(--red)}.gold{background:#b8860b}.green{background:var(--green)}.dark{background:var(--dark)}.gray{background:#5f6b7a}.danger{background:var(--danger)}.mini-button{padding:9px 12px;font-size:.82rem;border-radius:12px;background:var(--dark)}.hidden{display:none!important}.setup-header{display:flex;align-items:center;justify-content:space-between;gap:10px}.setup-header .title{margin:0}.pillrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.pill{background:#eef4ff;border:1px solid #cbd8ec;border-radius:999px;padding:7px 10px;font-size:.82rem;font-weight:700;color:var(--dark)}.pill.used{background:#eceff3;color:#697386;text-decoration:line-through}.switch{display:flex;align-items:center;gap:10px;background:#f6f8fb;border:1px solid var(--line);border-radius:14px;padding:10px;margin-top:10px}.switch input{width:auto;transform:scale(1.25)}
     .region-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}.region-card{border:3px solid var(--line);border-radius:20px;padding:14px 10px;background:linear-gradient(180deg,#fff,#f5f9ff);text-align:center;cursor:pointer;transition:.18s;box-shadow:0 4px 12px rgba(0,0,0,.08);min-height:150px;display:flex;flex-direction:column;justify-content:center;gap:6px}.region-card.active{border-color:var(--gold);box-shadow:0 0 0 4px rgba(245,197,66,.26),0 8px 18px rgba(0,0,0,.12);background:linear-gradient(180deg,#fffdf3,#eef4ff)}.region-card.unsupported{opacity:.74;filter:saturate(.82)}.region-flag{font-size:2.35rem;line-height:1}.region-name{font-weight:900;color:var(--dark);font-size:1rem;line-height:1.1}.region-summary{color:var(--muted);font-size:.76rem;line-height:1.25;min-height:34px}.region-tag{display:inline-block;align-self:center;font-size:.72rem;font-weight:900;padding:6px 10px;border-radius:999px;background:#eef4ff;color:var(--blue);border:1px solid #cbd8ec}.region-tag.coming{background:#fff4d8;color:#8a6500;border-color:#f2d27b}.selected-style-box{margin-top:14px;border-radius:16px;background:#f6f8fb;border:1px solid var(--line);padding:12px}.selected-style-title{font-weight:900;color:var(--dark);font-size:1rem;margin-bottom:4px}
+
+    .app.app-hidden{
+      display:none;
+    }
+    .region-modal{
+      position:fixed;
+      inset:0;
+      z-index:10000;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:calc(20px + env(safe-area-inset-top)) 14px calc(20px + env(safe-area-inset-bottom));
+      background:
+        radial-gradient(circle at top left,rgba(255,255,255,.22),transparent 28%),
+        linear-gradient(135deg,rgba(0,43,92,.96),rgba(0,80,164,.96),rgba(215,25,32,.92));
+      overflow:auto;
+    }
+    .region-modal.show{
+      display:flex;
+    }
+    .region-modal-card{
+      width:min(96vw,780px);
+      max-height:calc(100vh - 40px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+      overflow:auto;
+      background:rgba(255,255,255,.97);
+      border-radius:28px;
+      border:3px solid rgba(255,255,255,.78);
+      box-shadow:0 24px 60px rgba(0,0,0,.42);
+      padding:18px;
+      animation:modalPop .32s ease;
+    }
+    .region-modal-hero{
+      text-align:center;
+      padding:8px 4px 14px;
+    }
+    .region-modal-flag{
+      font-size:2rem;
+      margin-bottom:4px;
+    }
+    .region-modal-title{
+      margin:0;
+      color:var(--dark);
+      font-size:1.45rem;
+      line-height:1.1;
+      font-weight:900;
+    }
+    .region-modal-sub{
+      color:var(--muted);
+      font-size:.88rem;
+      margin-top:7px;
+      line-height:1.35;
+    }
+    .region-modal-actions{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:12px;
+    }
+    .region-change-button{
+      margin-top:10px;
+      width:100%;
+      background:var(--blue);
+    }
+    @keyframes modalPop{
+      0%{transform:scale(.92);opacity:0}
+      100%{transform:scale(1);opacity:1}
+    }
+
     .winner{display:none;text-align:center;background:linear-gradient(135deg,var(--gold),#fff2b2);border:3px solid #9b6f00;color:#3b2800;font-weight:900;border-radius:18px;padding:15px;margin-top:11px;font-size:1.12rem}.team-choice{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}.team-radio input{display:none}.team-radio span{display:block;text-align:center;padding:14px 10px;border-radius:15px;border:3px solid var(--line);background:#fff;font-weight:900;color:var(--dark);box-shadow:0 3px 0 rgba(0,0,0,.08)}.team-radio input:checked+span{border-color:var(--blue);background:#eef4ff;box-shadow:0 0 0 4px rgba(0,80,164,.15)}
     .history{max-height:270px;overflow:auto;background:white;border:1px solid var(--line);border-radius:14px}.historyItem{padding:10px 12px;border-bottom:1px solid #edf1f7;font-size:.9rem}.historyItem:last-child{border-bottom:0}.cameraWrap{display:grid;gap:10px}video,canvas,img{width:100%;border-radius:16px;background:#111;max-height:420px;object-fit:contain;border:2px solid var(--line)}#snapshot{display:none}.tapCount{font-size:1.8rem;font-weight:900;color:var(--red);text-align:center}.icon-btn{font-size:1.35rem;padding:12px 8px;min-height:54px;display:flex;align-items:center;justify-content:center}.icon-label{font-size:.7rem;font-weight:800;display:block;margin-top:3px}.info-box{display:none;background:#f6f8fb;border:1px solid var(--line);border-radius:14px;padding:10px;font-size:.82rem;color:var(--muted);line-height:1.35}.footer{text-align:center;color:white;opacity:.9;font-size:.8rem;margin-top:13px}
     .celebration{display:none;position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden;background:radial-gradient(circle at center,rgba(255,255,255,.15),rgba(0,0,0,.45))}.celebration.show{display:block}.flag-fall{position:absolute;top:-12vh;font-size:2rem;animation:fall linear infinite,sway ease-in-out infinite;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35));opacity:.95}.flag-fall:nth-child(1){left:4%;animation-duration:7s,3.2s}.flag-fall:nth-child(2){left:16%;animation-duration:8.5s,4.1s}.flag-fall:nth-child(3){left:28%;animation-duration:7.8s,3.7s}.flag-fall:nth-child(4){left:42%;animation-duration:9s,4.5s}.flag-fall:nth-child(5){left:57%;animation-duration:8.2s,3.6s}.flag-fall:nth-child(6){left:72%;animation-duration:7.2s,3.1s}.flag-fall:nth-child(7){left:88%;animation-duration:8.8s,4.8s}.celebrate-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,560px);background:rgba(255,255,255,.94);border:4px solid var(--gold);border-radius:24px;box-shadow:0 18px 40px rgba(0,0,0,.35);padding:18px;text-align:center;pointer-events:auto}.celebrate-title{font-size:1.6rem;font-weight:900;color:var(--dark);line-height:1.15;margin:0}.celebrate-sub{margin-top:8px;color:var(--muted);font-size:.95rem;font-weight:700}.coqui{font-size:3.8rem;display:inline-block;animation:bounceDance 1.2s ease-in-out infinite}.celebrate-btn{margin-top:14px;background:var(--dark);color:white;border:none;border-radius:14px;padding:12px 16px;font-weight:900;font-size:.95rem;cursor:pointer}
@@ -25,10 +93,38 @@
   </style>
 </head>
 <body>
-<div class="app">
+
+<div class="region-modal show" id="regionModal">
+  <div class="region-modal-card">
+    <div class="region-modal-hero">
+      <div class="region-modal-flag">&#x1F3B2; &#x1F1F5;&#x1F1F7; &#x1F1E8;&#x1F1FA; &#x1F1E9;&#x1F1F4; &#x1F3B2;</div>
+      <h1 class="region-modal-title">Choose Your Domino Style</h1>
+      <div class="region-modal-sub">Pick your region or game type to load the right scoring rules before the app starts.</div>
+    </div>
+
+    <div class="region-grid" id="regionGrid"></div>
+
+    <div style="margin-top:12px;">
+      <label for="regionSelect">Or choose from a list</label>
+      <select id="regionSelect" onchange="selectRuleSet(this.value)"></select>
+    </div>
+
+    <div class="selected-style-box">
+      <div class="selected-style-title" id="selectedStyleTitle">Choose a style</div>
+      <div id="selectedStyleSummary" class="small">The app will open after you select an available scoring style.</div>
+    </div>
+
+    <div class="region-modal-actions">
+      <button class="green" onclick="confirmCurrentRegion()">Use This Style</button>
+      <button class="gray" onclick="selectRuleSet('puertoRican')">Puerto Rican</button>
+    </div>
+  </div>
+</div>
+
+<div class="app app-hidden" id="mainApp">
   <div class="hero" id="hero"><div class="flag">&#x1F1F5;&#x1F1F7; &#x1F3B2; Domino Boricua &#x1F3B2; &#x1F1F5;&#x1F1F7;</div><h1>Domino Scorekeeper</h1><div class="sub">Regional styles &bull; Smart scoring &bull; Game tracker</div></div>
 
-  <div class="card" id="regionSelectorCard">
+  <div class="card hidden" id="regionSelectorCard">
     <h2 class="title">Choose Your Domino Style</h2><div class="small">Pick the region or game type first. Caribbean team styles work now; other styles are staged for future scoring modes.</div>
     <div class="region-grid" id="regionGrid"></div>
     <div style="margin-top:12px"><label for="regionSelect">Or choose from a list</label><select id="regionSelect" onchange="selectRuleSet(this.value)"></select></div>
@@ -41,9 +137,9 @@
       <div class="grid2" style="margin-top:10px"><div><label>Team 1 Name</label><input id="team1Name" value="Team A" oninput="saveAndRender()"></div><div><label>Team 2 Name</label><input id="team2Name" value="Team B" oninput="saveAndRender()"></div></div>
       <div class="grid2" style="margin-top:10px"><div><label>Winning Total</label><select id="targetScore" onchange="saveAndRender()"></select></div><div><label>Premios</label><select id="premiosMode" onchange="saveAndRender()"></select></div></div>
       <div class="switch"><input type="checkbox" id="autoSaveToggle" checked onchange="saveAndRender()"><div><strong>Autosave on this phone</strong><div class="small">Keeps score if Safari/Chrome closes.</div></div></div>
-      <div class="grid2" style="margin-top:12px"><button class="green" onclick="startGame()">Start Game</button><button class="gray" onclick="resetCurrentGame()">Reset Current</button></div>
+      <div class="grid2" style="margin-top:12px"><button class="green" onclick="startGame()">Start Game</button><button class="gray" onclick="resetCurrentGame()">Reset Current</button></div><button class="region-change-button" onclick="openRegionModal(true)">Change Domino Style</button>
     </div>
-    <div class="hidden" id="setupCollapsed"><div class="small">Setup hidden. Target: <strong id="miniTarget">500</strong> &bull; Style: <strong id="miniStyle">Puerto Rican</strong></div><button class="mini-button" style="margin-top:10px" onclick="showSetup()">Edit Setup</button></div>
+    <div class="hidden" id="setupCollapsed"><div class="small">Setup hidden. Target: <strong id="miniTarget">500</strong> &bull; Style: <strong id="miniStyle">Puerto Rican</strong></div><button class="mini-button" style="margin-top:10px" onclick="showSetup()">Edit Setup</button><button class="region-change-button" onclick="openRegionModal(true)">Change Domino Style</button></div>
     <div class="pillrow" id="premioPills"></div>
   </div>
 
@@ -72,24 +168,54 @@
 
 <script>
 const RULE_SETS={puertoRican:{id:"puertoRican",name:"Puerto Rican",flagHtml:"&#x1F1F5;&#x1F1F7;",supported:true,defaultTarget:500,targetOptions:[500,250],premios:[100,75,50,25],bonuses:[["none","None",0],["chuchazo","Chuchazo",100],["capicu","Capic&uacute;",100],["dominao","Dominao",0],["trancado","Trancado / Tranque",0],["custom","Custom",0]],summary:"Double-six, 2 teams, higher score wins, premios, Chuchazo, and Capic&uacute;."},cuban:{id:"cuban",name:"Cuban",flagHtml:"&#x1F1E8;&#x1F1FA;",supported:true,defaultTarget:150,targetOptions:[100,150,200],premios:[],bonuses:[["none","None",0],["custom","Custom",0]],summary:"Team scoring to 100, 150, or 200. No premios or special-tile bonuses."},dominican:{id:"dominican",name:"Dominican",flagHtml:"&#x1F1E9;&#x1F1F4;",supported:true,defaultTarget:500,targetOptions:[500,250],premios:[],bonuses:[["none","None",0],["custom","Custom",0]],summary:"Team scoring with table-by-table house rules. Bonuses are left customizable."},muggins:{id:"muggins",name:"Muggins / All Fives",flagHtml:"&#x1F1EC;&#x1F1E7;",supported:false,summary:"Coming soon: score during play when open ends total a multiple of 5."},fivesAndThrees:{id:"fivesAndThrees",name:"Fives and Threes",flagHtml:"&#x1F1EC;&#x1F1E7;",supported:false,summary:"Coming soon: score on multiples of 3 and 5."},fiveUp:{id:"fiveUp",name:"Five Up",flagHtml:"&#x1F1FA;&#x1F1F8;",supported:false,summary:"Coming soon: multiples-of-5 scoring with double spinners."},mexicanTrain:{id:"mexicanTrain",name:"Mexican Train",flagHtml:"&#x1F682;",supported:false,summary:"Coming soon: individual penalty scoring where lowest cumulative score wins."},chickenFoot:{id:"chickenFoot",name:"Chicken Foot",flagHtml:"&#x1F413;",supported:false,summary:"Coming soon: individual penalty scoring with chicken-foot double rules."}};
-let premios=[100,75,50,25];let tapPoints=[];let detectedDominoBox=null;let stream=null;let state={team1Score:0,team2Score:0,premioUsed:[false,false,false,false],history:[],gameTracker:[],gameStarted:false,celebrationDismissed:false,setupOpen:false,selectedRuleSet:"puertoRican"};
+let premios=[100,75,50,25];let tapPoints=[];let detectedDominoBox=null;let stream=null;let state={team1Score:0,team2Score:0,premioUsed:[false,false,false,false],history:[],gameTracker:[],gameStarted:false,celebrationDismissed:false,setupOpen:false,selectedRuleSet:"puertoRican",regionConfirmed:false};
 function $(id){return document.getElementById(id)}function activeRule(){return RULE_SETS[state.selectedRuleSet]||RULE_SETS.puertoRican}function teamName(t){return t===1?($("team1Name").value.trim()||"Team 1"):($("team2Name").value.trim()||"Team 2")}function target(){return Number($("targetScore").value)||activeRule().defaultTarget}function mode(){return $("premiosMode").value}function now(){return new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}function selectedWinner(){return Number(document.querySelector('input[name="handWinnerRadio"]:checked').value)}function nextPremioIndex(){return state.premioUsed.findIndex(x=>!x)}
+
+function openRegionModal(allowClose=false){
+  $("regionModal").classList.add("show");
+  $("mainApp").classList.add("app-hidden");
+  renderRegionSelector();
+}
+function closeRegionModal(){
+  $("regionModal").classList.remove("show");
+  $("mainApp").classList.remove("app-hidden");
+}
+function confirmCurrentRegion(){
+  const rule = activeRule();
+  if(!rule.supported){
+    alert(rule.name+" is staged for a future scoring screen. Choose Puerto Rican, Cuban, or Dominican for now.");
+    return;
+  }
+  state.regionConfirmed=true;
+  applyRuleSet(state.selectedRuleSet);
+  closeRegionModal();
+  saveAndRender();
+}
+function bootRegionGate(){
+  renderRegionSelector();
+  if(state.regionConfirmed){
+    closeRegionModal();
+  } else {
+    openRegionModal();
+  }
+}
+
 function renderRegionSelector(){let grid=$("regionGrid"),sel=$("regionSelect");grid.innerHTML="";sel.innerHTML="";Object.values(RULE_SETS).forEach(r=>{let c=document.createElement("div");c.className="region-card"+(r.id===state.selectedRuleSet?" active":"")+(!r.supported?" unsupported":"");c.onclick=()=>selectRuleSet(r.id);c.innerHTML=`<div class="region-flag">${r.flagHtml}</div><div class="region-name">${r.name}</div><div class="region-summary">${r.summary}</div><div class="region-tag ${r.supported?"":"coming"}">${r.supported?"Available":"Coming Soon"}</div>`;grid.appendChild(c);let o=document.createElement("option");o.value=r.id;o.innerHTML=`${r.flagHtml} ${r.name}${r.supported?"":" - Coming Soon"}`;if(r.id===state.selectedRuleSet)o.selected=true;sel.appendChild(o)});$("selectedStyleTitle").innerHTML=activeRule().flagHtml+" "+activeRule().name;$("selectedStyleSummary").innerHTML=activeRule().summary}
-function selectRuleSet(id){let r=RULE_SETS[id];if(!r)return;if(!r.supported){alert(r.name+" is staged for a future scoring screen. Puerto Rican, Cuban, and Dominican work now.");$("regionSelect").value=state.selectedRuleSet;return}state.selectedRuleSet=id;applyRuleSet(id);state.setupOpen=true;render();saveAndRender()}
+function selectRuleSet(id){let r=RULE_SETS[id];if(!r)return;if(!r.supported){alert(r.name+" is staged for a future scoring screen. Puerto Rican, Cuban, and Dominican work now.");$("regionSelect").value=state.selectedRuleSet;renderRegionSelector();return}state.selectedRuleSet=id;state.regionConfirmed=true;applyRuleSet(id);state.setupOpen=true;closeRegionModal();render();saveAndRender()}
 function applyRuleSet(id){let r=RULE_SETS[id]||RULE_SETS.puertoRican;premios=r.premios||[];state.premioUsed=premios.map(()=>false);let ts=$("targetScore");ts.innerHTML="";r.targetOptions.forEach(v=>{let o=document.createElement("option");o.value=v;o.textContent=v+" points";if(v===r.defaultTarget)o.selected=true;ts.appendChild(o)});let ps=$("premiosMode");ps.innerHTML="";if(premios.length){let on=document.createElement("option");on.value="on";on.textContent="Auto: "+premios.join(" / ");ps.appendChild(on);let off=document.createElement("option");off.value="off";off.textContent="Off";ps.appendChild(off);ps.value="on";ps.disabled=false}else{let off=document.createElement("option");off.value="off";off.textContent="No premios for this style";ps.appendChild(off);ps.value="off";ps.disabled=true}let bt=$("bonusType");bt.innerHTML="";r.bonuses.forEach(b=>{let o=document.createElement("option");o.value=b[0];o.dataset.points=b[2];o.innerHTML=b[2]?`${b[1]} +${b[2]}`:b[1];bt.appendChild(o)});bonusChanged()}
 function applySetupVisibility(){let collapsed=state.gameStarted&&!state.setupOpen;$("setupBody").classList.toggle("hidden",collapsed);$("setupCollapsed").classList.toggle("hidden",!collapsed);$("hideSetupBtn").classList.toggle("hidden",collapsed||!state.gameStarted);$("hero").classList.toggle("compact",collapsed)}function startGame(){state.gameStarted=true;state.setupOpen=false;applySetupVisibility();saveAndRender();window.scrollTo({top:0,behavior:"smooth"})}function hideSetup(){state.gameStarted=true;state.setupOpen=false;applySetupVisibility();saveAndRender()}function showSetup(){state.setupOpen=true;applySetupVisibility();saveAndRender()}
 function bonusChanged(){let s=$("bonusType"),o=s.options[s.selectedIndex];if(o&&s.value!=="custom")$("bonusPoints").value=o.dataset.points||0}function scoreHand(){let team=selectedWinner(),dom=Number($("handPoints").value)||0,bonus=Number($("bonusPoints").value)||0,label=$("bonusType").options[$("bonusType").selectedIndex].text.replace(" +0","").replace(" +100",""),note=$("handNote").value.trim(),premio=0,pi=-1;if(mode()==="on"&&premios.length){pi=nextPremioIndex();if(pi>=0){premio=premios[pi];state.premioUsed[pi]=true}}let total=dom+bonus+premio;if(total===0&&!confirm("This hand is adding 0 points. Continue?"))return;addScore(team,total,{reason:"Hand score",detail:`${dom} domino points${premio?" + "+premio+" premio":""}${bonus?" + "+bonus+" "+label:""}${note?" &bull; "+note:""}`,premioIdx:pi});clearHandForm()}function clearHandForm(){$("handPoints").value="";$("bonusType").value="none";$("bonusPoints").value="0";$("handNote").value=""}
 function manualAdjust(team,dir){let raw=Number($("manualPoints").value);if(!raw||raw<=0){alert("Enter a point value first.");return}addScore(team,raw*dir,{reason:$("manualReason").value,detail:dir>0?"Manual add":"Manual subtract"});$("manualPoints").value=""}function addScore(team,pts,meta){state.gameStarted=true;state.setupOpen=false;if(team===1)state.team1Score=Math.max(0,state.team1Score+pts);else state.team2Score=Math.max(0,state.team2Score+pts);state.history.unshift({team,teamName:teamName(team),points:pts,reason:meta.reason||"Score",detail:meta.detail||"",premioIdx:meta.premioIdx??-1,time:now()});state.celebrationDismissed=false;saveAndRender()}
 function undoLast(){if(!state.history.length){alert("No score history to undo.");return}let l=state.history.shift();if(l.team===1)state.team1Score=Math.max(0,state.team1Score-l.points);else state.team2Score=Math.max(0,state.team2Score-l.points);if(l.premioIdx>=0)state.premioUsed[l.premioIdx]=false;state.celebrationDismissed=false;saveAndRender()}function recordCompletedGame(){if(state.team1Score===0&&state.team2Score===0)return false;let n1=teamName(1),n2=teamName(2),s1=state.team1Score,s2=state.team2Score,w=s1>=s2?n1:n2,l=s1>=s2?n2:n1,ls=s1>=s2?s2:s1;state.gameTracker.unshift({winner:w,loser:l,team1Name:n1,team2Name:n2,team1Score:s1,team2Score:s2,target:target(),chiva:ls===0,style:activeRule().name,time:now()});return true}
 function resetBoard(){state.team1Score=0;state.team2Score=0;state.premioUsed=premios.map(()=>false);state.history=[];state.gameStarted=false;state.setupOpen=true;state.celebrationDismissed=false;$("celebrationOverlay").classList.remove("show")}function startNewGame(){recordCompletedGame();resetBoard();saveAndRender();window.scrollTo({top:0,behavior:"smooth"})}function resetCurrentGame(){if(!confirm("Reset only the current game? The tracker will stay."))return;resetBoard();saveAndRender()}function clearTracker(){if(!confirm("Clear the game tracker too?"))return;state.gameTracker=[];resetBoard();saveAndRender()}
-function snapshot(){return{state,team1Name:$("team1Name").value,team2Name:$("team2Name").value,targetScore:$("targetScore").value,autoSaveToggle:$("autoSaveToggle").checked}}function restore(d){if(!d)return;state=d.state||state;if(!state.gameTracker)state.gameTracker=[];if(!state.selectedRuleSet)state.selectedRuleSet="puertoRican";$("team1Name").value=d.team1Name||"Team A";$("team2Name").value=d.team2Name||"Team B";$("autoSaveToggle").checked=d.autoSaveToggle!==false;applyRuleSet(state.selectedRuleSet);if(d.targetScore)$("targetScore").value=d.targetScore}function saveGame(){localStorage.setItem("prDominoSavedGameV10",JSON.stringify(snapshot()));alert("Game saved on this device.")}function loadGame(){restore(JSON.parse(localStorage.getItem("prDominoSavedGameV10")||"null"));render()}function saveAndRender(){if($("autoSaveToggle").checked)localStorage.setItem("prDominoAutoSaveV10",JSON.stringify(snapshot()));render()}function loadAutoSave(){restore(JSON.parse(localStorage.getItem("prDominoAutoSaveV10")||"null"))}
+function snapshot(){return{state,team1Name:$("team1Name").value,team2Name:$("team2Name").value,targetScore:$("targetScore").value,autoSaveToggle:$("autoSaveToggle").checked}}function restore(d){if(!d)return;state=d.state||state;if(!state.gameTracker)state.gameTracker=[];if(!state.selectedRuleSet)state.selectedRuleSet="puertoRican";if(state.regionConfirmed===undefined)state.regionConfirmed=false;$("team1Name").value=d.team1Name||"Team A";$("team2Name").value=d.team2Name||"Team B";$("autoSaveToggle").checked=d.autoSaveToggle!==false;applyRuleSet(state.selectedRuleSet);if(d.targetScore)$("targetScore").value=d.targetScore}function saveGame(){localStorage.setItem("prDominoSavedGameV11",JSON.stringify(snapshot()));alert("Game saved on this device.")}function loadGame(){restore(JSON.parse(localStorage.getItem("prDominoSavedGameV11")||"null"));render()}function saveAndRender(){if($("autoSaveToggle").checked)localStorage.setItem("prDominoAutoSaveV11",JSON.stringify(snapshot()));render()}function loadAutoSave(){restore(JSON.parse(localStorage.getItem("prDominoAutoSaveV11")||"null"))}
 function render(){let t=target(),n1=teamName(1),n2=teamName(2);$("team1Display").textContent=n1;$("team2Display").textContent=n2;$("team1Score").textContent=state.team1Score;$("team2Score").textContent=state.team2Score;$("team1Needed").textContent=state.team1Score>=t?"Winner!":"Needs "+Math.max(0,t-state.team1Score);$("team2Needed").textContent=state.team2Score>=t?"Winner!":"Needs "+Math.max(0,t-state.team2Score);$("team1Bar").style.width=Math.min(100,state.team1Score/t*100)+"%";$("team2Bar").style.width=Math.min(100,state.team2Score/t*100)+"%";$("team1Box").classList.toggle("winning",state.team1Score>state.team2Score);$("team2Box").classList.toggle("winning",state.team2Score>state.team1Score);$("radioTeam1").textContent=n1;$("radioTeam2").textContent=n2;$("addManual1").textContent="Add "+n1;$("addManual2").textContent="Add "+n2;$("subManual1").textContent="Subtract "+n1;$("subManual2").textContent="Subtract "+n2;$("premioPills").innerHTML=(!premios.length||mode()==="off")?'<span class="pill used">Premios off</span>':premios.map((p,i)=>`<span class="pill ${state.premioUsed[i]?'used':''}">${i+1}${ordinal(i+1)} premio: ${p}</span>`).join("");$("miniTarget").textContent=t;$("miniStyle").textContent=activeRule().name;renderRegionSelector();applySetupVisibility();renderHistory();renderGameTracker();let wb=$("winnerBox");if(state.team1Score>=t||state.team2Score>=t){let w=state.team1Score>=t&&state.team1Score>=state.team2Score?n1:n2;wb.style.display="block";wb.innerHTML="&#x1F3C6; "+w+" wins the game!";if(!state.celebrationDismissed)showCelebration(w)}else{wb.style.display="none";$("celebrationOverlay").classList.remove("show");state.celebrationDismissed=false}}
 function ordinal(n){return n===1?"st":n===2?"nd":n===3?"rd":"th"}function renderHistory(){if(!state.history.length){$("historyList").innerHTML='<div class="historyItem">No points added yet.</div>';return}$("historyList").innerHTML=state.history.map(h=>`<div class="historyItem"><strong>${h.teamName}</strong> ${h.points>0?"+":""}${h.points}<br><span class="small">${h.reason}${h.detail?" &bull; "+h.detail:""} &bull; ${h.time}</span></div>`).join("")}function renderGameTracker(){if(!state.gameTracker.length){$("gameTrackerList").innerHTML='<div class="historyItem">No completed games yet.</div>';return}$("gameTrackerList").innerHTML=state.gameTracker.map((g,i)=>`<div class="historyItem"><strong>Game ${state.gameTracker.length-i}: ${g.winner} wins</strong> ${g.chiva?'<span class="pill used" style="text-decoration:none">Chiva</span>':""}<br><span class="small">${g.team1Name} ${g.team1Score} - ${g.team2Score} ${g.team2Name} &bull; ${g.style||"Domino"} &bull; ${g.time}</span></div>`).join("")}
 function showCelebration(w){$("celebrateWinnerName").innerHTML="&#x1F3C6; "+w+" Wins! &#x1F3C6;";$("celebrationOverlay").classList.add("show")}function hideCelebration(){$("celebrationOverlay").classList.remove("show");state.celebrationDismissed=true;saveAndRender()}
 function toggleCameraInfo(){let b=$("cameraInfo");b.style.display=b.style.display==="block"?"none":"block"}async function startCamera(){try{closeCamera(false);stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});$("video").srcObject=stream;$("video").style.display="block";$("snapshot").style.display="none"}catch(e){alert("Camera could not open. Check camera permission.")}}function closeCamera(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}$("video").srcObject=null;$("video").style.display="none"}function capturePhoto(){let v=$("video");if(!v.srcObject){alert("Open the camera first.");return}let c=$("snapshot"),ctx=c.getContext("2d");c.width=v.videoWidth||1280;c.height=v.videoHeight||720;ctx.drawImage(v,0,0,c.width,c.height);c.baseImage=ctx.getImageData(0,0,c.width,c.height);detectedDominoBox=null;c.style.display="block";resetTapCount(false);closeCamera()}
 $("snapshot").addEventListener("click",function(e){let r=this.getBoundingClientRect();tapPoints.push({x:(e.clientX-r.left)*(this.width/r.width),y:(e.clientY-r.top)*(this.height/r.height)});drawTapMarkers()});function drawTapMarkers(){let c=$("snapshot"),ctx=c.getContext("2d");if(!c.width)return;if(c.baseImage)ctx.putImageData(c.baseImage,0,0);if(detectedDominoBox){ctx.save();ctx.strokeStyle="#0050a4";ctx.lineWidth=Math.max(5,c.width/180);ctx.setLineDash([12,8]);ctx.strokeRect(detectedDominoBox.x,detectedDominoBox.y,detectedDominoBox.w,detectedDominoBox.h);ctx.restore()}ctx.fillStyle="rgba(215,25,32,.85)";ctx.strokeStyle="white";ctx.lineWidth=Math.max(3,c.width/300);tapPoints.forEach((p,i)=>{let rr=Math.max(10,c.width/80);ctx.beginPath();ctx.arc(p.x,p.y,rr,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle="white";ctx.font=`${rr*1.2}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(i+1,p.x,p.y);ctx.fillStyle="rgba(215,25,32,.85)"});$("tapCount").textContent=tapPoints.length}function undoTap(){tapPoints.pop();drawTapMarkers()}function resetTapCount(resetBase=true){tapPoints=[];if(resetBase){$("snapshot").baseImage=null;detectedDominoBox=null}$("tapCount").textContent="0";$("suggestedCountBox").style.display="none";drawTapMarkers()}function useTapCount(){$("handPoints").value=tapPoints.length;window.scrollTo({top:$("handPoints").getBoundingClientRect().top+window.scrollY-120,behavior:"smooth"})}
 function autoCountPips(){let c=$("snapshot");if(!c.width||c.style.display==="none"){alert("Take a photo first.");return}let ctx=c.getContext("2d");if(!c.baseImage)c.baseImage=ctx.getImageData(0,0,c.width,c.height);let img=c.baseImage,w=img.width,h=img.height,maxSide=720,sc=Math.min(1,maxSide/Math.max(w,h)),sw=Math.round(w*sc),sh=Math.round(h*sc),oc=document.createElement("canvas");oc.width=w;oc.height=h;oc.getContext("2d").putImageData(img,0,0);let wc=document.createElement("canvas");wc.width=sw;wc.height=sh;let wx=wc.getContext("2d");wx.drawImage(oc,0,0,sw,sh);let data=wx.getImageData(0,0,sw,sh).data,dirs=[[1,0],[-1,0],[0,1],[0,-1]];function bright(x,y){let i=(y*sw+x)*4,r=data[i],g=data[i+1],b=data[i+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b);return (r+g+b)/3>125&&(mx-mn)<72}let vis=new Uint8Array(sw*sh),best=null;for(let y=1;y<sh-1;y++)for(let x=1;x<sw-1;x++){let st=y*sw+x;if(vis[st]||!bright(x,y))continue;let q=[[x,y]],head=0;vis[st]=1;let cnt=0,minX=x,maxX=x,minY=y,maxY=y,sx=0,sy=0;while(head<q.length&&cnt<90000){let [cx,cy]=q[head++];cnt++;sx+=cx;sy+=cy;minX=Math.min(minX,cx);maxX=Math.max(maxX,cx);minY=Math.min(minY,cy);maxY=Math.max(maxY,cy);for(let [dx,dy]of dirs){let nx=cx+dx,ny=cy+dy,ni=ny*sw+nx;if(nx>0&&ny>0&&nx<sw-1&&ny<sh-1&&!vis[ni]&&bright(nx,ny)){vis[ni]=1;q.push([nx,ny])}}}let bw=maxX-minX+1,bh=maxY-minY+1,area=cnt,fill=area/(bw*bh),aspect=Math.max(bw,bh)/Math.max(1,Math.min(bw,bh)),dist=Math.hypot(sx/cnt-sw/2,sy/cnt-sh/2);if(area>sw*sh*.012&&bw>sw*.06&&bh>sh*.06&&aspect<4.8&&fill>.16){let score=area-dist*18;if(!best||score>best.score)best={minX,maxX,minY,maxY,bw,bh,score}}}let roi=best?{x:Math.max(0,best.minX-3),y:Math.max(0,best.minY-3),w:Math.min(sw-1,best.maxX+3)-Math.max(0,best.minX-3)+1,h:Math.min(sh-1,best.maxY+3)-Math.max(0,best.minY-3)+1}:{x:Math.round(sw*.3),y:Math.round(sh*.18),w:Math.round(sw*.4),h:Math.round(sh*.64)};detectedDominoBox={x:roi.x/sc,y:roi.y/sc,w:roi.w/sc,h:roi.h/sc};let samples=[];for(let yy=roi.y;yy<roi.y+roi.h;yy+=2)for(let xx=roi.x;xx<roi.x+roi.w;xx+=2){let i=(yy*sw+xx)*4;samples.push((data[i]+data[i+1]+data[i+2])/3)}samples.sort((a,b)=>a-b);let th=Math.max(42,Math.min(105,(samples[Math.floor(samples.length/2)]||160)*.43));function dark(x,y){let i=(y*sw+x)*4;return(data[i]+data[i+1]+data[i+2])/3<th}let vd=new Uint8Array(sw*sh),cand=[],short=Math.min(roi.w,roi.h),minB=Math.max(4,short*.035),maxB=Math.max(10,short*.22);for(let y=Math.max(1,roi.y);y<Math.min(sh-1,roi.y+roi.h);y++)for(let x=Math.max(1,roi.x);x<Math.min(sw-1,roi.x+roi.w);x++){let st=y*sw+x;if(vd[st]||!dark(x,y))continue;let q=[[x,y]],head=0;vd[st]=1;let cnt=0,minX=x,maxX=x,minY=y,maxY=y,sx=0,sy=0;while(head<q.length&&cnt<8000){let [cx,cy]=q[head++];cnt++;sx+=cx;sy+=cy;minX=Math.min(minX,cx);maxX=Math.max(maxX,cx);minY=Math.min(minY,cy);maxY=Math.max(maxY,cy);for(let [dx,dy]of dirs){let nx=cx+dx,ny=cy+dy,ni=ny*sw+nx;if(nx>roi.x&&ny>roi.y&&nx<roi.x+roi.w-1&&ny<roi.y+roi.h-1&&!vd[ni]&&dark(nx,ny)){vd[ni]=1;q.push([nx,ny])}}}let bw=maxX-minX+1,bh=maxY-minY+1,cx=sx/cnt,cy=sy/cnt,ratio=Math.max(bw,bh)/Math.max(1,Math.min(bw,bh)),fill=cnt/(bw*bh),rx=(cx-roi.x)/roi.w,ry=(cy-roi.y)/roi.h;if(bw>=minB&&bh>=minB&&bw<=maxB&&bh<=maxB&&ratio<=1.55&&!(Math.abs(rx-.5)<.12&&Math.abs(ry-.5)<.11)&&rx>.06&&rx<.94&&ry>.04&&ry<.96&&fill>=.34&&fill<=.92&&cnt>=16)cand.push({x:cx/sc,y:cy/sc,area:cnt})}cand.sort((a,b)=>b.area-a.area);let merged=[],md=Math.max(8,Math.min(detectedDominoBox.w,detectedDominoBox.h)*.09);cand.forEach(p=>{if(!merged.some(m=>Math.hypot(m.x-p.x,m.y-p.y)<md))merged.push(p)});tapPoints=merged.slice(0,168).map(p=>({x:p.x,y:p.y}));drawTapMarkers();$("suggestedCount").textContent=tapPoints.length;$("suggestedCountBox").style.display="block";if(confirm("Suggested count is "+tapPoints.length+". Use this as Domino Points?"))$("handPoints").value=tapPoints.length}
-loadAutoSave();applyRuleSet(state.selectedRuleSet||"puertoRican");renderRegionSelector();bonusChanged();render();
+loadAutoSave();applyRuleSet(state.selectedRuleSet||"puertoRican");bonusChanged();render();bootRegionGate();
 if("serviceWorker"in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(e=>console.log(e)))}
 </script>
 </body>
