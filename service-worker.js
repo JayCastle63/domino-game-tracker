@@ -1,4 +1,4 @@
-const CACHE_NAME = "domino-boricua-v2";
+const CACHE_NAME = "domino-boricua-v3";
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
@@ -26,6 +26,23 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
+
+  // Always try the network first for the page itself, so a new deploy shows up on the very
+  // next load instead of waiting on a cache-name bump. Only fall back to the cached copy
+  // when offline. Static assets (icons, manifest) stay cache-first since they rarely change.
+  if (event.request.mode === "navigate" || event.request.destination === "document") {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+          return response;
+        })
+        .catch(() => caches.match(event.request).then(cached => cached || caches.match("./index.html")))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(response => response || fetch(event.request))
   );
