@@ -187,12 +187,23 @@
     </div>
     <div class="hidden" id="sessionCardActive">
       <div class="setup-header"><h2 class="title">Shared Session</h2><span class="pill" id="sessionStatusPill">Live</span></div>
-      <div style="text-align:center;margin-top:6px"><div class="small">Session Code</div><div style="font-size:2rem;font-weight:900;letter-spacing:4px;color:var(--dark)" id="sessionCodeDisplay">------</div></div>
-      <div class="grid2" style="margin-top:10px"><button class="gold" onclick="shareSessionLink()">Share Invite</button><button class="gray" onclick="copySessionLink()">Copy Link</button></div>
-      <div class="small" style="margin-top:12px">Players in this session</div>
+      <div class="small" id="sessionRoleNote" style="text-align:center;margin-top:4px"></div>
+      <div class="hidden" id="adminCodeBox">
+        <div style="text-align:center;margin-top:6px"><div class="small">Player Code &mdash; full access</div><div style="font-size:1.7rem;font-weight:900;letter-spacing:3px;color:var(--dark)" id="sessionCodeDisplay">------</div></div>
+        <div class="grid2" style="margin-top:8px"><button class="gold" onclick="shareSessionLink('admin')">Share Player Invite</button><button class="gray" onclick="copySessionLink('admin')">Copy Player Link</button></div>
+      </div>
+      <div class="hidden" id="viewerCodeBox" style="text-align:center;margin-top:16px">
+        <div class="small">Viewer Code &mdash; watch only</div><div style="font-size:1.3rem;font-weight:900;letter-spacing:2px;color:var(--muted)" id="viewerCodeDisplay">------</div>
+        <div class="grid2" style="margin-top:8px"><button class="gold" onclick="shareSessionLink('viewer')">Share Viewer Invite</button><button class="gray" onclick="copySessionLink('viewer')">Copy Viewer Link</button></div>
+      </div>
+      <div class="small" style="margin-top:14px">Players in this session</div>
       <div class="pillrow" id="sessionPlayersList"></div>
       <div class="grid2" style="margin-top:12px"><button class="danger" onclick="leaveSession()">Leave Session</button><button class="danger" id="endSessionBtn" onclick="endSession()">End for Everyone</button></div>
     </div>
+  </div>
+
+  <div class="install-banner" id="viewerBanner" style="background:linear-gradient(135deg,#5f6b7a,#37414d)">
+    <div class="txt">Viewing only<span>You're watching this game live. Ask the host for the player code to join in and score hands.</span></div>
   </div>
 
   <div class="winner" id="winnerBox"></div>
@@ -235,7 +246,7 @@
     <div class="grid2" style="margin-top:12px"><button class="green" onclick="submitRound()">Save Round</button><button class="gray" onclick="clearRoundEntry()">Clear</button></div>
   </div>
 
-  <div class="card"><div class="setup-header"><h2 class="title">Live Camera Tile Counter</h2><button class="mini-button" onclick="toggleCameraInfo()">i</button></div><div class="info-box" id="cameraInfo">Open the camera and hold it over the remaining tiles &mdash; the live count updates as you hold steady, with green dots marking each detected pip. If the losing hand&rsquo;s tiles don&rsquo;t fit in one frame, tap <strong>Add Sweep</strong> after each group, then <strong>Apply Tally to Hand</strong> to fill Domino Points below. Works best on a plain surface with even light. If lighting is tricky, use Manual Photo Mode to tap pips yourself.</div>
+  <div class="card" id="cameraCard"><div class="setup-header"><h2 class="title">Live Camera Tile Counter</h2><button class="mini-button" onclick="toggleCameraInfo()">i</button></div><div class="info-box" id="cameraInfo">Open the camera and hold it over the remaining tiles &mdash; the live count updates as you hold steady, with green dots marking each detected pip. If the losing hand&rsquo;s tiles don&rsquo;t fit in one frame, tap <strong>Add Sweep</strong> after each group, then <strong>Apply Tally to Hand</strong> to fill Domino Points below. Works best on a plain surface with even light. If lighting is tricky, use Manual Photo Mode to tap pips yourself.</div>
     <div class="cameraWrap" style="margin-top:10px">
       <div id="videoStage"><video id="video" playsinline autoplay muted></video><canvas id="liveOverlay"></canvas></div>
       <canvas id="snapshot"></canvas>
@@ -265,7 +276,7 @@
     </div>
   </div>
 
-  <div class="card"><h2 class="title">Game Controls</h2><div class="grid2"><button class="dark" onclick="undoLast()">Undo Last</button><button class="green" onclick="startNewGame()">Start New Game</button><button class="gray" onclick="saveGame()">Save Game</button><button class="danger" onclick="clearTracker()">Clear Tracker</button></div></div>
+  <div class="card" id="gameControlsCard"><h2 class="title">Game Controls</h2><div class="grid2"><button class="dark" onclick="undoLast()">Undo Last</button><button class="green" onclick="startNewGame()">Start New Game</button><button class="gray" onclick="saveGame()">Save Game</button><button class="danger" onclick="clearTracker()">Clear Tracker</button></div></div>
   <div class="card"><h2 class="title">Game Tracker</h2><div class="history" id="gameTrackerList"></div></div>
   <div class="card" id="scoreHistoryCard"><h2 class="title">Score History</h2><div class="history" id="historyList"></div></div>
   <div class="card hidden" id="roundHistoryCard"><h2 class="title">Round History</h2><div class="history" id="roundHistoryList"></div></div>
@@ -286,7 +297,8 @@ const RULE_SETS={
   chickenFoot:{id:"chickenFoot",name:"Chicken Foot",flagHtml:"&#x1F413;",supported:true,category:"individual",defaultTarget:0,targetOptions:[0],premios:[],bonuses:[["none","None",0]],summary:"Individual scoring like Mexican Train, with chicken-foot double rules. Add leftover pips each round; lowest total wins."}
 };
 let premios=[100,75,50,25];let tapPoints=[];let stream=null;let liveActive=false,liveTimer=null,lastLiveCount=0,liveWorkCanvas=null,tallyTotal=0,tallySweeps=0;let state={team1Score:0,team2Score:0,premioUsed:[false,false,false,false],history:[],gameTracker:[],gameStarted:false,celebrationDismissed:false,setupOpen:false,selectedRuleSet:"puertoRican",regionConfirmed:false,playersList:[],players:[],rounds:[]};
-let session={active:false,code:null,isHost:false,playerId:null,playerName:null};let sessionUnsub=null;let lastAppliedSessionRuleSet=null;let settingsPushTimer=null;
+let session={active:false,code:null,isHost:false,role:"admin",viewerCode:null,playerId:null,playerName:null};let sessionUnsub=null;let lastAppliedSessionRuleSet=null;let settingsPushTimer=null;
+function blockedForViewer(){if(session.active&&session.role==="viewer"){alert("You're in view-only mode for this session. Ask the host for the player code to make changes.");return true}return false}
 function $(id){return document.getElementById(id)}function activeRule(){return RULE_SETS[state.selectedRuleSet]||RULE_SETS.puertoRican}function teamName(t){return t===1?($("team1Name").value.trim()||"Team 1"):($("team2Name").value.trim()||"Team 2")}function target(){return Number($("targetScore").value)||activeRule().defaultTarget}function mode(){return $("premiosMode").value}function now(){return new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}function selectedWinner(){return Number(document.querySelector('input[name="handWinnerRadio"]:checked').value)}function nextPremioIndex(){return state.premioUsed.findIndex(x=>!x)}function escapeHtml(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}function whenFirebaseReady(cb){if(window.FirebaseBridge){cb()}else{window.addEventListener("firebase-ready",cb,{once:true})}}
 
 function openRegionModal(allowClose=false){
@@ -321,13 +333,14 @@ function bootRegionGate(){
 function renderRegionSelector(){let grid=$("regionGrid"),sel=$("regionSelect");grid.innerHTML="";sel.innerHTML="";Object.values(RULE_SETS).forEach(r=>{let c=document.createElement("div");c.className="region-card"+(r.id===state.selectedRuleSet?" active":"")+(!r.supported?" unsupported":"");c.onclick=()=>selectRuleSet(r.id);c.innerHTML=`<div class="region-flag">${r.flagHtml}</div><div class="region-name">${r.name}</div><div class="region-summary">${r.summary}</div><div class="region-tag ${r.supported?"":"coming"}">${r.supported?"Available":"Coming Soon"}</div>`;grid.appendChild(c);let o=document.createElement("option");o.value=r.id;o.innerHTML=`${r.flagHtml} ${r.name}${r.supported?"":" - Coming Soon"}`;if(r.id===state.selectedRuleSet)o.selected=true;sel.appendChild(o)});$("selectedStyleTitle").innerHTML=activeRule().flagHtml+" "+activeRule().name;$("selectedStyleSummary").innerHTML=activeRule().summary}
 function selectRuleSet(id){let r=RULE_SETS[id];if(!r)return;if(!r.supported){alert(r.name+" is staged for a future scoring screen. Puerto Rican, Cuban, and Dominican work now.");$("regionSelect").value=state.selectedRuleSet;renderRegionSelector();return}state.selectedRuleSet=id;state.regionConfirmed=true;applyRuleSet(id);state.setupOpen=true;closeRegionModal();render();saveAndRender()}
 function applyRuleSet(id,resetPremios=true){let r=RULE_SETS[id]||RULE_SETS.puertoRican;premios=r.premios||[];if(resetPremios)state.premioUsed=premios.map(()=>false);let ts=$("targetScore");ts.innerHTML="";r.targetOptions.forEach(v=>{let o=document.createElement("option");o.value=v;o.textContent=v+" points";if(v===r.defaultTarget)o.selected=true;ts.appendChild(o)});let ps=$("premiosMode");ps.innerHTML="";if(premios.length){let on=document.createElement("option");on.value="on";on.textContent="Auto: "+premios.join(" / ");ps.appendChild(on);let off=document.createElement("option");off.value="off";off.textContent="Off";ps.appendChild(off);ps.value="on";ps.disabled=false}else{let off=document.createElement("option");off.value="off";off.textContent="No premios for this style";ps.appendChild(off);ps.value="off";ps.disabled=true}let bt=$("bonusType");bt.innerHTML="";r.bonuses.forEach(b=>{let o=document.createElement("option");o.value=b[0];o.dataset.points=b[2];o.innerHTML=b[2]?`${b[1]} +${b[2]}`:b[1];bt.appendChild(o)});bonusChanged();renderQuickScoreButtons()}
-function applySetupVisibility(){let collapsed=state.gameStarted&&!state.setupOpen;$("setupBody").classList.toggle("hidden",collapsed);$("setupCollapsed").classList.toggle("hidden",!collapsed);$("hideSetupBtn").classList.toggle("hidden",collapsed||!state.gameStarted);$("hero").classList.toggle("compact",collapsed)}function startGame(){state.gameStarted=true;state.setupOpen=false;applySetupVisibility();if(session.active)pushSessionSettings({gameStarted:true});saveAndRender();window.scrollTo({top:0,behavior:"smooth"})}function hideSetup(){state.gameStarted=true;state.setupOpen=false;applySetupVisibility();saveAndRender()}function showSetup(){state.setupOpen=true;applySetupVisibility();saveAndRender()}
+function applySetupVisibility(){let collapsed=state.gameStarted&&!state.setupOpen;$("setupBody").classList.toggle("hidden",collapsed);$("setupCollapsed").classList.toggle("hidden",!collapsed);$("hideSetupBtn").classList.toggle("hidden",collapsed||!state.gameStarted);$("hero").classList.toggle("compact",collapsed)}function startGame(){if(blockedForViewer())return;state.gameStarted=true;state.setupOpen=false;applySetupVisibility();if(session.active)pushSessionSettings({gameStarted:true});saveAndRender();window.scrollTo({top:0,behavior:"smooth"})}function hideSetup(){state.gameStarted=true;state.setupOpen=false;applySetupVisibility();saveAndRender()}function showSetup(){state.setupOpen=true;applySetupVisibility();saveAndRender()}
 function roundToNearest(n,unit){return Math.round(n/unit)*unit}
 function bonusChanged(){let s=$("bonusType"),o=s.options[s.selectedIndex];if(o&&s.value!=="custom")$("bonusPoints").value=o.dataset.points||0}
 function scoreHand(){let team=selectedWinner(),r=activeRule(),isMultiple=r.category==="multiple",domRaw=Number($("handPoints").value)||0,dom=isMultiple?roundToNearest(domRaw,5):domRaw,bonus=Number($("bonusPoints").value)||0,label=$("bonusType").options[$("bonusType").selectedIndex].text.replace(" +0","").replace(" +100",""),note=$("handNote").value.trim(),premio=0,pi=-1;if(mode()==="on"&&premios.length){pi=nextPremioIndex();if(pi>=0){premio=premios[pi];state.premioUsed[pi]=true}}let total=dom+bonus+premio;if(total===0&&!confirm("This hand is adding 0 points. Continue?"))return;addScore(team,total,{reason:isMultiple?"Domino out":"Hand score",detail:`${dom}${isMultiple?" pips (rounded)":" domino points"}${premio?" + "+premio+" premio":""}${bonus?" + "+bonus+" "+label:""}${note?" • "+note:""}`,premioIdx:pi});clearHandForm()}function clearHandForm(){$("handPoints").value="";$("bonusType").value="none";$("bonusPoints").value="0";$("handNote").value="";resetTally()}
 function manualAdjust(team,dir){let raw=Number($("manualPoints").value);if(!raw||raw<=0){alert("Enter a point value first.");return}addScore(team,raw*dir,{reason:$("manualReason").value,detail:dir>0?"Manual add":"Manual subtract"});$("manualPoints").value=""}
-function addScore(team,pts,meta){if(session.active){sessionPushHistory(team,pts,meta);return}state.gameStarted=true;state.setupOpen=false;if(team===1)state.team1Score=Math.max(0,state.team1Score+pts);else state.team2Score=Math.max(0,state.team2Score+pts);state.history.unshift({team,teamName:teamName(team),points:pts,reason:meta.reason||"Score",detail:meta.detail||"",premioIdx:meta.premioIdx??-1,time:now()});state.celebrationDismissed=false;saveAndRender()}
+function addScore(team,pts,meta){if(blockedForViewer())return;if(session.active){sessionPushHistory(team,pts,meta);return}state.gameStarted=true;state.setupOpen=false;if(team===1)state.team1Score=Math.max(0,state.team1Score+pts);else state.team2Score=Math.max(0,state.team2Score+pts);state.history.unshift({team,teamName:teamName(team),points:pts,reason:meta.reason||"Score",detail:meta.detail||"",premioIdx:meta.premioIdx??-1,time:now()});state.celebrationDismissed=false;saveAndRender()}
 function undoLast(){
+  if(blockedForViewer())return;
   if(activeRule().category==="individual"){
     if(!state.rounds.length){alert("No rounds to undo.");return}
     if(session.active){let r=state.rounds[0],bridge=window.FirebaseBridge;bridge.remove(bridge.ref(bridge.db,`sessions/${session.code}/rounds/${r._key}`)).catch(e=>alert("Couldn't undo: "+e.message));return}
@@ -351,12 +364,12 @@ function resetBoard(){
     state.rounds=[];return;
   }
   if(session.active){let bridge=window.FirebaseBridge;bridge.remove(bridge.ref(bridge.db,`sessions/${session.code}/history`)).catch(()=>{});pushSessionSettings({gameStarted:false});$("celebrationOverlay").classList.remove("show");return}state.team1Score=0;state.team2Score=0;state.premioUsed=premios.map(()=>false);state.history=[];state.gameStarted=false;state.setupOpen=true;state.celebrationDismissed=false;$("celebrationOverlay").classList.remove("show")}
-function startNewGame(){recordCompletedGame();resetBoard();saveAndRender();window.scrollTo({top:0,behavior:"smooth"})}function resetCurrentGame(){if(!confirm("Reset only the current game? The tracker will stay."))return;resetBoard();saveAndRender()}
-function clearTracker(){if(!confirm("Clear the game tracker too?"))return;if(session.active){let bridge=window.FirebaseBridge;bridge.remove(bridge.ref(bridge.db,`sessions/${session.code}/gameTracker`)).catch(()=>{})}else{state.gameTracker=[]}resetBoard();saveAndRender()}
+function startNewGame(){if(blockedForViewer())return;recordCompletedGame();resetBoard();saveAndRender();window.scrollTo({top:0,behavior:"smooth"})}function resetCurrentGame(){if(blockedForViewer())return;if(!confirm("Reset only the current game? The tracker will stay."))return;resetBoard();saveAndRender()}
+function clearTracker(){if(blockedForViewer())return;if(!confirm("Clear the game tracker too?"))return;if(session.active){let bridge=window.FirebaseBridge;bridge.remove(bridge.ref(bridge.db,`sessions/${session.code}/gameTracker`)).catch(()=>{})}else{state.gameTracker=[]}resetBoard();saveAndRender()}
 function snapshot(){return{state,team1Name:$("team1Name").value,team2Name:$("team2Name").value,targetScore:$("targetScore").value,autoSaveToggle:$("autoSaveToggle").checked}}function restore(d){if(!d)return;state=d.state||state;if(!state.gameTracker)state.gameTracker=[];if(!state.selectedRuleSet)state.selectedRuleSet="puertoRican";if(state.regionConfirmed===undefined)state.regionConfirmed=false;if(!state.playersList)state.playersList=[];if(!state.players)state.players=[];if(!state.rounds)state.rounds=[];$("team1Name").value=d.team1Name||"Team A";$("team2Name").value=d.team2Name||"Team B";$("autoSaveToggle").checked=d.autoSaveToggle!==false;applyRuleSet(state.selectedRuleSet);if(d.targetScore)$("targetScore").value=d.targetScore}function saveGame(){localStorage.setItem("prDominoSavedGameV11",JSON.stringify(snapshot()));alert("Game saved on this device.")}function loadGame(){restore(JSON.parse(localStorage.getItem("prDominoSavedGameV11")||"null"));render()}
 function saveAndRender(){if(session.active){clearTimeout(settingsPushTimer);settingsPushTimer=setTimeout(()=>pushSessionSettings(),400)}else if($("autoSaveToggle").checked){localStorage.setItem("prDominoAutoSaveV11",JSON.stringify(snapshot()))}render()}
 function loadAutoSave(){restore(JSON.parse(localStorage.getItem("prDominoAutoSaveV11")||"null"))}
-function render(){let t=target(),n1=teamName(1),n2=teamName(2);$("team1Display").textContent=n1;$("team2Display").textContent=n2;$("team1Score").textContent=state.team1Score;$("team2Score").textContent=state.team2Score;$("team1Needed").textContent=state.team1Score>=t?"Winner!":"Needs "+Math.max(0,t-state.team1Score);$("team2Needed").textContent=state.team2Score>=t?"Winner!":"Needs "+Math.max(0,t-state.team2Score);$("team1Bar").style.width=Math.min(100,state.team1Score/t*100)+"%";$("team2Bar").style.width=Math.min(100,state.team2Score/t*100)+"%";$("team1Box").classList.toggle("winning",state.team1Score>state.team2Score);$("team2Box").classList.toggle("winning",state.team2Score>state.team1Score);$("radioTeam1").textContent=n1;$("radioTeam2").textContent=n2;$("addManual1").textContent="Add "+n1;$("addManual2").textContent="Add "+n2;$("subManual1").textContent="Subtract "+n1;$("subManual2").textContent="Subtract "+n2;$("premioPills").innerHTML=(!premios.length||mode()==="off")?'<span class="pill used">Premios off</span>':premios.map((p,i)=>`<span class="pill ${state.premioUsed[i]?'used':''}">${i+1}${ordinal(i+1)} premio: ${p}</span>`).join("");$("miniTarget").textContent=t;$("miniStyle").textContent=activeRule().name;renderRegionSelector();applySetupVisibility();renderHistory();renderGameTracker();renderSessionCard();applyCategoryVisibility();updateScoreHandLabels();let qt1=$("quickScoreTeam1Label"),qt2=$("quickScoreTeam2Label");if(qt1)qt1.textContent=n1;if(qt2)qt2.textContent=n2;renderRoster();renderLeaderboard();renderRoundEntryFields();renderRoundHistory();renderCameraTargetPlayerOptions();let wb=$("winnerBox"),isTeamTarget=activeRule().category!=="individual"&&t>0;if(isTeamTarget&&(state.team1Score>=t||state.team2Score>=t)){let w=state.team1Score>=t&&state.team1Score>=state.team2Score?n1:n2;wb.style.display="block";wb.innerHTML="&#x1F3C6; "+escapeHtml(w)+" wins the game!";if(!state.celebrationDismissed)showCelebration(w)}else{wb.style.display="none";$("celebrationOverlay").classList.remove("show");state.celebrationDismissed=false}}
+function render(){let t=target(),n1=teamName(1),n2=teamName(2);$("team1Display").textContent=n1;$("team2Display").textContent=n2;$("team1Score").textContent=state.team1Score;$("team2Score").textContent=state.team2Score;$("team1Needed").textContent=state.team1Score>=t?"Winner!":"Needs "+Math.max(0,t-state.team1Score);$("team2Needed").textContent=state.team2Score>=t?"Winner!":"Needs "+Math.max(0,t-state.team2Score);$("team1Bar").style.width=Math.min(100,state.team1Score/t*100)+"%";$("team2Bar").style.width=Math.min(100,state.team2Score/t*100)+"%";$("team1Box").classList.toggle("winning",state.team1Score>state.team2Score);$("team2Box").classList.toggle("winning",state.team2Score>state.team1Score);$("radioTeam1").textContent=n1;$("radioTeam2").textContent=n2;$("addManual1").textContent="Add "+n1;$("addManual2").textContent="Add "+n2;$("subManual1").textContent="Subtract "+n1;$("subManual2").textContent="Subtract "+n2;$("premioPills").innerHTML=(!premios.length||mode()==="off")?'<span class="pill used">Premios off</span>':premios.map((p,i)=>`<span class="pill ${state.premioUsed[i]?'used':''}">${i+1}${ordinal(i+1)} premio: ${p}</span>`).join("");$("miniTarget").textContent=t;$("miniStyle").textContent=activeRule().name;renderRegionSelector();applySetupVisibility();renderHistory();renderGameTracker();renderSessionCard();applyCategoryVisibility();applyRoleVisibility();updateScoreHandLabels();let qt1=$("quickScoreTeam1Label"),qt2=$("quickScoreTeam2Label");if(qt1)qt1.textContent=n1;if(qt2)qt2.textContent=n2;renderRoster();renderLeaderboard();renderRoundEntryFields();renderRoundHistory();renderCameraTargetPlayerOptions();let wb=$("winnerBox"),isTeamTarget=activeRule().category!=="individual"&&t>0;if(isTeamTarget&&(state.team1Score>=t||state.team2Score>=t)){let w=state.team1Score>=t&&state.team1Score>=state.team2Score?n1:n2;wb.style.display="block";wb.innerHTML="&#x1F3C6; "+escapeHtml(w)+" wins the game!";if(!state.celebrationDismissed)showCelebration(w)}else{wb.style.display="none";$("celebrationOverlay").classList.remove("show");state.celebrationDismissed=false}}
 function ordinal(n){return n===1?"st":n===2?"nd":n===3?"rd":"th"}function renderHistory(){if(!state.history.length){$("historyList").innerHTML='<div class="historyItem">No points added yet.</div>';return}$("historyList").innerHTML=state.history.map(h=>`<div class="historyItem"><strong>${escapeHtml(h.teamName)}</strong> ${h.points>0?"+":""}${h.points}<br><span class="small">${escapeHtml(h.reason)}${h.detail?" • "+escapeHtml(h.detail):""} • ${escapeHtml(h.time)}</span></div>`).join("")}function renderGameTracker(){if(!state.gameTracker.length){$("gameTrackerList").innerHTML='<div class="historyItem">No completed games yet.</div>';return}$("gameTrackerList").innerHTML=state.gameTracker.map((g,i)=>{if(g.mode==="individual"){let rank=(g.ranking||[]).map((p,idx)=>`${idx+1}. ${escapeHtml(p.name)} (${Number(p.total)||0})`).join(" • ");let winnerName=(g.ranking&&g.ranking[0]&&g.ranking[0].name)||"?";return `<div class="historyItem"><strong>Game ${state.gameTracker.length-i}: ${escapeHtml(winnerName)} wins</strong><br><span class="small">${rank||"No players"} • ${escapeHtml(g.style||"Domino")} • ${escapeHtml(g.time)}</span></div>`}return `<div class="historyItem"><strong>Game ${state.gameTracker.length-i}: ${escapeHtml(g.winner)} wins</strong> ${g.chiva?'<span class="pill used" style="text-decoration:none">Chiva</span>':""}<br><span class="small">${escapeHtml(g.team1Name)} ${g.team1Score} - ${g.team2Score} ${escapeHtml(g.team2Name)} • ${escapeHtml(g.style||"Domino")} • ${escapeHtml(g.time)}</span></div>`}).join("")}
 function showCelebration(w){$("celebrateWinnerName").innerHTML="&#x1F3C6; "+escapeHtml(w)+" Wins! &#x1F3C6;";$("celebrationOverlay").classList.add("show")}function hideCelebration(){$("celebrationOverlay").classList.remove("show");state.celebrationDismissed=true;saveAndRender()}
 function toggleCameraInfo(){let b=$("cameraInfo");b.style.display=b.style.display==="block"?"none":"block"}
@@ -426,8 +439,30 @@ function autoCountPips(){let c=$("snapshot");if(!c.width||c.style.display==="non
    are always derived by summing that history on every update. ---- */
 function getDeviceId(){let id=localStorage.getItem("prDominoDeviceIdV1");if(!id){id="p_"+Math.random().toString(36).slice(2,10)+Date.now().toString(36);localStorage.setItem("prDominoDeviceIdV1",id)}return id}
 function generateSessionCode(){const chars="ABCDEFGHJKMNPQRSTUVWXYZ23456789";let code="";for(let i=0;i<6;i++)code+=chars[Math.floor(Math.random()*chars.length)];return code}
+function generateViewerCode(){return "V-"+generateSessionCode()}
 async function sessionExists(code){let bridge=window.FirebaseBridge;let snap=await bridge.get(bridge.ref(bridge.db,`sessions/${code}/meta`));return snap.exists()}
+async function viewerCodeExists(code){let bridge=window.FirebaseBridge;let snap=await bridge.get(bridge.ref(bridge.db,`viewerCodes/${code}`));return snap.exists()}
 async function generateUniqueSessionCode(){for(let i=0;i<5;i++){let code=generateSessionCode();if(!(await sessionExists(code)))return code}return generateSessionCode()+Date.now().toString(36).slice(-2)}
+async function generateUniqueViewerCode(){for(let i=0;i<5;i++){let code=generateViewerCode();if(!(await viewerCodeExists(code)))return code}return generateViewerCode()+Date.now().toString(36).slice(-2)}
+/* A code is either the player/admin code (the session's own key) or a "V-" prefixed viewer
+   code that's looked up in a separate index node. Not a real security boundary — there's no
+   auth here, so it's a UI-level courtesy the same way the whole session model already is a
+   "share the link and trust people" system — but it keeps a casual viewer from fat-fingering
+   a score change, and lets the host hand out a safe link to spectators. */
+async function resolveJoinCode(rawCode){
+  let code=(rawCode||"").trim().toUpperCase();
+  if(!code)return null;
+  let bridge=window.FirebaseBridge;
+  if(code.startsWith("V-")){
+    let snap=await bridge.get(bridge.ref(bridge.db,`viewerCodes/${code}`));
+    if(!snap.exists())return null;
+    let val=snap.val();
+    return {sessionCode:val&&val.sessionCode,role:"viewer"};
+  }
+  let exists=await sessionExists(code);
+  if(!exists)return null;
+  return {sessionCode:code,role:"admin"};
+}
 
 async function startSession(){
   if(!window.FirebaseBridge||!window.FirebaseBridge.enabled){alert("Ask the app owner to finish the one-time Firebase setup to enable shared sessions.");return}
@@ -436,32 +471,31 @@ async function startSession(){
   if(name===null)return;
   name=name.trim()||"Host";
   try{
-    let bridge=window.FirebaseBridge,playerId=getDeviceId(),code=await generateUniqueSessionCode();
-    let payload={meta:{createdAt:bridge.serverTimestamp(),hostId:playerId},settings:{selectedRuleSet:state.selectedRuleSet||"puertoRican",team1Name:$("team1Name").value||"Team A",team2Name:$("team2Name").value||"Team B",targetScore:$("targetScore").value||String(activeRule().defaultTarget),premiosMode:$("premiosMode").value||"on",gameStarted:false},players:{[playerId]:{name,isHost:true,joinedAt:bridge.serverTimestamp()}}};
+    let bridge=window.FirebaseBridge,playerId=getDeviceId(),code=await generateUniqueSessionCode(),viewerCode=await generateUniqueViewerCode();
+    let payload={meta:{createdAt:bridge.serverTimestamp(),hostId:playerId,viewerCode},settings:{selectedRuleSet:state.selectedRuleSet||"puertoRican",team1Name:$("team1Name").value||"Team A",team2Name:$("team2Name").value||"Team B",targetScore:$("targetScore").value||String(activeRule().defaultTarget),premiosMode:$("premiosMode").value||"on",gameStarted:false},players:{[playerId]:{name,isHost:true,role:"admin",joinedAt:bridge.serverTimestamp()}}};
     await bridge.set(bridge.ref(bridge.db,`sessions/${code}`),payload);
-    session={active:true,code,isHost:true,playerId,playerName:name};
+    await bridge.set(bridge.ref(bridge.db,`viewerCodes/${viewerCode}`),{sessionCode:code,createdAt:bridge.serverTimestamp()});
+    session={active:true,code,isHost:true,role:"admin",viewerCode,playerId,playerName:name};
     persistSession();subscribeToSession(code);render();
   }catch(e){alert("Couldn't start a session: "+e.message)}
 }
 function openJoinPrompt(){
   if(!window.FirebaseBridge||!window.FirebaseBridge.enabled){alert("Ask the app owner to finish the one-time Firebase setup to enable shared sessions.");return}
-  let code=prompt("Enter the session code:");
+  let code=prompt("Enter the player code or viewer code:");
   if(!code)return;
-  code=code.trim().toUpperCase();
   let name=prompt("Your name (shown to other players):","Player");
   if(name===null)return;
   joinSession(code,name.trim()||"Player");
 }
-async function joinSession(code,name){
+async function joinSession(rawCode,name){
   if(!window.FirebaseBridge||!window.FirebaseBridge.enabled){alert("Ask the app owner to finish the one-time Firebase setup to enable shared sessions.");return}
-  if(session.active&&session.code===code)return;
   if(session.active)leaveSession(true);
   try{
-    let exists=await sessionExists(code);
-    if(!exists){alert('No session found with code "'+code+'". Double-check with the host.');return}
-    let bridge=window.FirebaseBridge,playerId=getDeviceId();
-    await bridge.set(bridge.ref(bridge.db,`sessions/${code}/players/${playerId}`),{name,isHost:false,joinedAt:bridge.serverTimestamp()});
-    session={active:true,code,isHost:false,playerId,playerName:name};
+    let resolved=await resolveJoinCode(rawCode);
+    if(!resolved||!resolved.sessionCode){alert('No session found with that code. Double-check with the host.');return}
+    let bridge=window.FirebaseBridge,playerId=getDeviceId(),code=resolved.sessionCode,role=resolved.role;
+    await bridge.set(bridge.ref(bridge.db,`sessions/${code}/players/${playerId}`),{name,isHost:false,role,joinedAt:bridge.serverTimestamp()});
+    session={active:true,code,isHost:false,role,viewerCode:null,playerId,playerName:name};
     persistSession();subscribeToSession(code);render();
   }catch(e){alert("Couldn't join that session: "+e.message)}
 }
@@ -470,15 +504,16 @@ function leaveSession(silent){
   let bridge=window.FirebaseBridge,code=session.code,playerId=session.playerId;
   if(bridge&&bridge.enabled&&code&&playerId)bridge.remove(bridge.ref(bridge.db,`sessions/${code}/players/${playerId}`)).catch(()=>{});
   unsubscribeSession();
-  session={active:false,code:null,isHost:false,playerId:null,playerName:null};
+  session={active:false,code:null,isHost:false,role:"admin",viewerCode:null,playerId:null,playerName:null};
   localStorage.removeItem("prDominoSessionV1");
   loadAutoSave();applyRuleSet(state.selectedRuleSet||"puertoRican");render();
   if(!silent)alert("You left the shared session. Back to your solo game on this device.");
 }
 function endSession(){
   if(!confirm("End this session for everyone? Everyone still connected will be disconnected."))return;
-  let bridge=window.FirebaseBridge,code=session.code;
+  let bridge=window.FirebaseBridge,code=session.code,viewerCode=session.viewerCode;
   bridge.remove(bridge.ref(bridge.db,`sessions/${code}`)).catch(()=>{});
+  if(viewerCode)bridge.remove(bridge.ref(bridge.db,`viewerCodes/${viewerCode}`)).catch(()=>{});
   leaveSession(true);
 }
 function unsubscribeSession(){if(sessionUnsub){sessionUnsub();sessionUnsub=null}lastAppliedSessionRuleSet=null}
@@ -506,6 +541,8 @@ function sessionPushHistory(team,pts,meta){
   pushSessionSettings({gameStarted:true});
 }
 function hydrateSessionState(val){
+  let mt=val.meta||{};
+  if(mt.viewerCode)session.viewerCode=mt.viewerCode;
   let st=val.settings||{};
   let rs=st.selectedRuleSet||"puertoRican";
   if(rs!==lastAppliedSessionRuleSet){applyRuleSet(rs,false);lastAppliedSessionRuleSet=rs}
@@ -532,9 +569,9 @@ function hydrateSessionState(val){
   state.rounds=roundEntries.slice().reverse().map(([k,rd])=>({_key:k,entries:(rd&&typeof rd.entries==="object"&&rd.entries)||{},time:String((rd&&rd.time)||"")}));
   state.players=Object.entries(val.roster||{}).map(([id,p])=>({id,name:String((p&&p.name)||"Player")}));
 
-  state.playersList=Object.entries(val.players||{}).map(([id,p])=>({id,name:String((p&&p.name)||"Player"),isHost:!!(p&&p.isHost)}));
+  state.playersList=Object.entries(val.players||{}).map(([id,p])=>({id,name:String((p&&p.name)||"Player"),isHost:!!(p&&p.isHost),role:(p&&p.role)==="viewer"?"viewer":"admin"}));
 }
-function persistSession(){localStorage.setItem("prDominoSessionV1",JSON.stringify({code:session.code,isHost:session.isHost,playerId:session.playerId,playerName:session.playerName}))}
+function persistSession(){localStorage.setItem("prDominoSessionV1",JSON.stringify({code:session.code,isHost:session.isHost,role:session.role,playerId:session.playerId,playerName:session.playerName}))}
 function tryRestoreSession(){
   let raw=localStorage.getItem("prDominoSessionV1");
   if(!raw)return;
@@ -545,15 +582,15 @@ function tryRestoreSession(){
     try{
       let exists=await sessionExists(saved.code);
       if(!exists){localStorage.removeItem("prDominoSessionV1");return}
-      let bridge=window.FirebaseBridge;
-      await bridge.set(bridge.ref(bridge.db,`sessions/${saved.code}/players/${saved.playerId}`),{name:saved.playerName,isHost:!!saved.isHost,joinedAt:bridge.serverTimestamp()});
-      session={active:true,code:saved.code,isHost:!!saved.isHost,playerId:saved.playerId,playerName:saved.playerName};
+      let bridge=window.FirebaseBridge,role=saved.role||"admin";
+      await bridge.set(bridge.ref(bridge.db,`sessions/${saved.code}/players/${saved.playerId}`),{name:saved.playerName,isHost:!!saved.isHost,role,joinedAt:bridge.serverTimestamp()});
+      session={active:true,code:saved.code,isHost:!!saved.isHost,role,viewerCode:null,playerId:saved.playerId,playerName:saved.playerName};
       subscribeToSession(saved.code);render();
     }catch(e){console.log(e)}
   });
 }
 function checkJoinLinkOnBoot(){
-  let m=location.hash.match(/join=([A-Za-z0-9]+)/);
+  let m=location.hash.match(/join=([A-Za-z0-9-]+)/);
   if(!m)return;
   let code=m[1].toUpperCase();
   history.replaceState(null,"",location.pathname+location.search);
@@ -566,18 +603,22 @@ function checkJoinLinkOnBoot(){
     joinSession(code,name.trim()||"Player");
   });
 }
-function sessionLink(){return location.origin+location.pathname+"#join="+session.code}
-function shareSessionLink(){let url=sessionLink();if(navigator.share){navigator.share({title:"Join my domino game",text:"Join my Domino Boricua session with code "+session.code,url}).catch(()=>{})}else copySessionLink()}
-function copySessionLink(){let url=sessionLink();if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(()=>alert("Link copied! Code: "+session.code)).catch(()=>alert("Copy this link:\n"+url))}else alert("Copy this link:\n"+url)}
+function sessionLink(code){return location.origin+location.pathname+"#join="+(code||session.code)}
+function shareSessionLink(kind){let code=kind==="viewer"?session.viewerCode:session.code;if(!code){alert("That code isn't available yet.");return}let url=sessionLink(code),label=kind==="viewer"?"as a viewer":"as a player";if(navigator.share){navigator.share({title:"Join my domino game",text:`Join my Domino Boricua session ${label} with code ${code}`,url}).catch(()=>{})}else copySessionLink(kind)}
+function copySessionLink(kind){let code=kind==="viewer"?session.viewerCode:session.code;if(!code){alert("That code isn't available yet.");return}let url=sessionLink(code);if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(()=>alert("Link copied! Code: "+code)).catch(()=>alert("Copy this link:\n"+url))}else alert("Copy this link:\n"+url)}
 function watchConnectionState(){let bridge=window.FirebaseBridge;bridge.onValue(bridge.ref(bridge.db,".info/connected"),snap=>{let pill=$("sessionStatusPill");if(!pill)return;let ok=snap.val()===true;pill.textContent=ok?"Live":"Reconnecting…";pill.classList.toggle("used",!ok)})}
-function renderSessionPlayers(){let box=$("sessionPlayersList");if(!box)return;let list=state.playersList||[];box.innerHTML=list.length?list.map(p=>`<span class="pill">${p.isHost?"&#x1F451; ":""}${escapeHtml(p.name)}${p.id===session.playerId?" (you)":""}</span>`).join(""):'<span class="pill used">No one connected</span>'}
+function renderSessionPlayers(){let box=$("sessionPlayersList");if(!box)return;let list=state.playersList||[];box.innerHTML=list.length?list.map(p=>`<span class="pill${p.role==="viewer"?" used":""}">${p.isHost?"&#x1F451; ":p.role==="viewer"?"&#x1F441; ":""}${escapeHtml(p.name)}${p.id===session.playerId?" (you)":""}</span>`).join(""):'<span class="pill used">No one connected</span>'}
 function renderSessionCard(){
   let solo=$("sessionCardSolo"),active=$("sessionCardActive");
   if(!solo||!active)return;
   if(session.active){
     solo.classList.add("hidden");active.classList.remove("hidden");
     $("sessionCodeDisplay").textContent=session.code||"------";
+    $("viewerCodeDisplay").textContent=session.viewerCode||"------";
+    $("adminCodeBox").classList.toggle("hidden",session.role==="viewer");
+    $("viewerCodeBox").classList.toggle("hidden",session.role==="viewer"||!session.viewerCode);
     $("endSessionBtn").style.display=session.isHost?"":"none";
+    $("sessionRoleNote").textContent=session.role==="viewer"?"You're viewing this session live — you can't change scores.":"You can add scores and rounds for this session.";
     renderSessionPlayers();
   }else{
     solo.classList.remove("hidden");active.classList.add("hidden");
@@ -585,6 +626,11 @@ function renderSessionCard(){
     $("startSessionBtn").disabled=!enabled;$("joinSessionBtn").disabled=!enabled;
     $("sessionSetupHint").style.display=enabled?"none":"block";
   }
+}
+function applyRoleVisibility(){
+  let isViewer=session.active&&session.role==="viewer";
+  ["setupCard","scoreHandCard","manualAdjustCard","quickScoreCard","rosterCard","roundEntryCard","cameraCard","gameControlsCard"].forEach(id=>{let el=$(id);if(el)el.classList.toggle("hidden",isViewer)});
+  let vb=$("viewerBanner");if(vb)vb.classList.toggle("show",isViewer);
 }
 
 /* ---- "Multiple" scoring styles (Muggins/All Fives, Fives and Threes, Five Up): points are
@@ -597,8 +643,8 @@ function renderQuickScoreButtons(){let r=activeRule(),box1=$("quickButtons1"),bo
 /* ---- Individual scoring styles (Mexican Train, Chicken Foot): any number of players, each
    round adds everyone's leftover pips (0 if they went out); lowest cumulative total wins.
    Rounds are appended (never mutated), same conflict-free pattern as team history. ---- */
-function addPlayer(){let name=$("newPlayerName").value.trim();if(!name){alert("Enter a player name.");return}if(session.active){sessionAddPlayer(name)}else{state.players.push({id:"local_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name})}$("newPlayerName").value="";saveAndRender()}
-function removePlayer(id){if(!confirm("Remove this player? Past round scores stay in the round history."))return;if(session.active){sessionRemovePlayer(id)}else{state.players=state.players.filter(p=>p.id!==id)}saveAndRender()}
+function addPlayer(){if(blockedForViewer())return;let name=$("newPlayerName").value.trim();if(!name){alert("Enter a player name.");return}if(session.active){sessionAddPlayer(name)}else{state.players.push({id:"local_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name})}$("newPlayerName").value="";saveAndRender()}
+function removePlayer(id){if(blockedForViewer())return;if(!confirm("Remove this player? Past round scores stay in the round history."))return;if(session.active){sessionRemovePlayer(id)}else{state.players=state.players.filter(p=>p.id!==id)}saveAndRender()}
 function sessionAddPlayer(name){let bridge=window.FirebaseBridge;bridge.push(bridge.ref(bridge.db,`sessions/${session.code}/roster`),{name}).catch(e=>alert("Couldn't add player: "+e.message))}
 function sessionRemovePlayer(id){let bridge=window.FirebaseBridge;bridge.remove(bridge.ref(bridge.db,`sessions/${session.code}/roster/${id}`)).catch(()=>{})}
 function playerTotals(){let totals={};(state.players||[]).forEach(p=>totals[p.id]=0);(state.rounds||[]).forEach(rd=>{Object.entries(rd.entries||{}).forEach(([pid,val])=>{if(totals[pid]===undefined)totals[pid]=0;totals[pid]+=Number(val)||0})});return totals}
@@ -607,7 +653,7 @@ function renderLeaderboard(){let box=$("leaderboardList");if(!box)return;let tot
 function renderRoundEntryFields(){let box=$("roundEntryFields");if(!box)return;let list=state.players||[];if(!list.length){box.innerHTML='<div class="small">Add players above first.</div>';return}box.innerHTML=list.map(p=>`<div style="margin-top:8px"><label>${escapeHtml(p.name)}</label><div class="grid2"><input id="roundInput_${escapeHtml(p.id)}" type="number" min="0" inputmode="numeric" placeholder="Pips left"><button class="mini-button" onclick="setRoundZero('${escapeHtml(p.id)}')">Domino'd (0)</button></div></div>`).join("")}
 function setRoundZero(id){let el=$("roundInput_"+id);if(el)el.value="0"}
 function clearRoundEntry(){(state.players||[]).forEach(p=>{let el=$("roundInput_"+p.id);if(el)el.value=""})}
-function submitRound(){let list=state.players||[];if(list.length<2){alert("Add at least 2 players first.");return}let entries={},summary=[];for(const p of list){let el=$("roundInput_"+p.id),raw=el?el.value:"";if(raw===""){alert(`Enter a pip count for ${p.name} (or tap Domino'd for 0).`);return}let val=Math.max(0,Number(raw)||0);entries[p.id]=val;summary.push(`${p.name}: ${val}`)}if(!confirm("Save this round?\n"+summary.join("\n")))return;if(session.active){let bridge=window.FirebaseBridge;bridge.push(bridge.ref(bridge.db,`sessions/${session.code}/rounds`),{entries,time:now()}).catch(e=>alert("Couldn't save round: "+e.message))}else{state.rounds.unshift({entries,time:now()})}clearRoundEntry();saveAndRender()}
+function submitRound(){if(blockedForViewer())return;let list=state.players||[];if(list.length<2){alert("Add at least 2 players first.");return}let entries={},summary=[];for(const p of list){let el=$("roundInput_"+p.id),raw=el?el.value:"";if(raw===""){alert(`Enter a pip count for ${p.name} (or tap Domino'd for 0).`);return}let val=Math.max(0,Number(raw)||0);entries[p.id]=val;summary.push(`${p.name}: ${val}`)}if(!confirm("Save this round?\n"+summary.join("\n")))return;if(session.active){let bridge=window.FirebaseBridge;bridge.push(bridge.ref(bridge.db,`sessions/${session.code}/rounds`),{entries,time:now()}).catch(e=>alert("Couldn't save round: "+e.message))}else{state.rounds.unshift({entries,time:now()})}clearRoundEntry();saveAndRender()}
 function renderRoundHistory(){let box=$("roundHistoryList");if(!box)return;let rounds=state.rounds||[];if(!rounds.length){box.innerHTML='<div class="historyItem">No rounds yet.</div>';return}let names={};(state.players||[]).forEach(p=>names[p.id]=p.name);box.innerHTML=rounds.map((r,i)=>{let parts=Object.entries(r.entries||{}).map(([pid,val])=>`${escapeHtml(names[pid]||"Player")}: ${Number(val)||0}`).join(", ");return `<div class="historyItem"><strong>Round ${rounds.length-i}</strong><br><span class="small">${parts||"No entries"} • ${escapeHtml(r.time||"")}</span></div>`}).join("")}
 function renderCameraTargetPlayerOptions(){let sel=$("cameraTargetPlayer");if(!sel)return;let list=state.players||[],prev=sel.value;sel.innerHTML=list.map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join("");if(list.some(p=>p.id===prev))sel.value=prev}
 function updateScoreHandLabels(){let r=activeRule(),isMultiple=r.category==="multiple",title=$("scoreHandTitle"),desc=$("scoreHandDesc"),lbl=$("handPointsLabel");if(!title)return;title.textContent=isMultiple?"End Hand — Domino Out":"Score a Hand";desc.innerHTML=isMultiple?"When someone dominoes or the hand blocks, count the pips left in the other hands — it&rsquo;s rounded to the nearest 5 automatically.":"Select who won the hand, enter the dots left in the losing team&rsquo;s hands, and the next premio applies automatically when premios are on.";lbl.textContent=isMultiple?"Pips Left (rounds to nearest 5)":"Domino Points"}
