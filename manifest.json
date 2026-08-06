@@ -1,10 +1,12 @@
 {
+  "id": "/domino-game-tracker/",
   "name": "Domino Boricua Scorekeeper",
   "short_name": "Domino Boricua",
-  "description": "Puerto Rican dominoes scorekeeper with premios, camera point counter, game tracker, and Chiva tracking.",
+  "description": "Puerto Rican dominoes scorekeeper with premios, live camera tile counter, game tracker, and Chiva tracking.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "portrait",
   "background_color": "#002b5c",
   "theme_color": "#0050a4",
