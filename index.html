@@ -12,6 +12,32 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="apple-touch-icon" href="icons/icon-180.png" />
   <link rel="icon" href="icons/icon-192.png" />
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import { getDatabase, ref, set, update, push, remove, onValue, onDisconnect, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+
+    /* Fill these in with your own free Firebase project's config (Project settings > General >
+       Your apps > SDK setup and configuration) to turn on shared sessions. These values are
+       meant to be public/client-side for Firebase, so it's safe to commit them here. Until you
+       do, the app runs solo-only exactly as before. */
+    const firebaseConfig = {
+      apiKey: "YOUR_FIREBASE_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    const enabled = !!firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith("YOUR_");
+    let db = null;
+    if (enabled) {
+      const app = initializeApp(firebaseConfig);
+      db = getDatabase(app);
+    }
+    window.FirebaseBridge = { enabled, db, ref, set, update, push, remove, onValue, onDisconnect, get, serverTimestamp };
+    window.dispatchEvent(new Event("firebase-ready"));
+  </script>
   <style>
     :root{--red:#d71920;--blue:#0050a4;--dark:#002b5c;--gold:#f5c542;--green:#159957;--danger:#c62828;--muted:#657083;--text:#172033;--card:rgba(255,255,255,.96);--line:#d9e2ef;--disabled:#aab3c2}
     *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--text);background:radial-gradient(circle at top left,rgba(255,255,255,.9),transparent 30%),linear-gradient(135deg,var(--blue) 0%,var(--dark) 48%,var(--red) 100%);min-height:100vh;padding:calc(18px + env(safe-area-inset-top)) 10px calc(18px + env(safe-area-inset-bottom))}
@@ -152,6 +178,23 @@
     <div class="pillrow" id="premioPills"></div>
   </div>
 
+  <div class="card" id="sessionCard">
+    <div id="sessionCardSolo">
+      <h2 class="title">Play With Others</h2>
+      <div class="small">Start a shared session so others can watch the score live on their own phone, or join in as players.</div>
+      <div class="grid2" style="margin-top:10px"><button class="green" id="startSessionBtn" onclick="startSession()">Start Shared Session</button><button class="dark" id="joinSessionBtn" onclick="openJoinPrompt()">Join a Session</button></div>
+      <div class="small" id="sessionSetupHint" style="margin-top:8px;display:none">Shared sessions need a one-time setup by the app owner (a free Firebase project). Ask them to finish it, or keep playing solo on this device.</div>
+    </div>
+    <div class="hidden" id="sessionCardActive">
+      <div class="setup-header"><h2 class="title">Shared Session</h2><span class="pill" id="sessionStatusPill">Live</span></div>
+      <div style="text-align:center;margin-top:6px"><div class="small">Session Code</div><div style="font-size:2rem;font-weight:900;letter-spacing:4px;color:var(--dark)" id="sessionCodeDisplay">------</div></div>
+      <div class="grid2" style="margin-top:10px"><button class="gold" onclick="shareSessionLink()">Share Invite</button><button class="gray" onclick="copySessionLink()">Copy Link</button></div>
+      <div class="small" style="margin-top:12px">Players in this session</div>
+      <div class="pillrow" id="sessionPlayersList"></div>
+      <div class="grid2" style="margin-top:12px"><button class="danger" onclick="leaveSession()">Leave Session</button><button class="danger" id="endSessionBtn" onclick="endSession()">End for Everyone</button></div>
+    </div>
+  </div>
+
   <div class="winner" id="winnerBox"></div>
   <div class="card score-card"><div class="scoreboard"><div class="team" id="team1Box"><div class="teamName" id="team1Display">Team A</div><div class="score" id="team1Score">0</div><div class="needed" id="team1Needed">Needs 500</div><div class="progress"><div class="bar" id="team1Bar"></div></div></div><div class="team" id="team2Box"><div class="teamName" id="team2Display">Team B</div><div class="score" id="team2Score">0</div><div class="needed" id="team2Needed">Needs 500</div><div class="progress"><div class="bar" id="team2Bar"></div></div></div></div></div>
 
@@ -204,8 +247,9 @@
 
 <script>
 const RULE_SETS={puertoRican:{id:"puertoRican",name:"Puerto Rican",flagHtml:"&#x1F1F5;&#x1F1F7;",supported:true,defaultTarget:500,targetOptions:[500,250],premios:[100,75,50,25],bonuses:[["none","None",0],["chuchazo","Chuchazo",100],["capicu","Capic&uacute;",100],["dominao","Dominao",0],["trancado","Trancado / Tranque",0],["custom","Custom",0]],summary:"Double-six, 2 teams, higher score wins, premios, Chuchazo, and Capic&uacute;."},cuban:{id:"cuban",name:"Cuban",flagHtml:"&#x1F1E8;&#x1F1FA;",supported:true,defaultTarget:150,targetOptions:[100,150,200],premios:[],bonuses:[["none","None",0],["custom","Custom",0]],summary:"Team scoring to 100, 150, or 200. No premios or special-tile bonuses."},dominican:{id:"dominican",name:"Dominican",flagHtml:"&#x1F1E9;&#x1F1F4;",supported:true,defaultTarget:500,targetOptions:[500,250],premios:[],bonuses:[["none","None",0],["custom","Custom",0]],summary:"Team scoring with table-by-table house rules. Bonuses are left customizable."},muggins:{id:"muggins",name:"Muggins / All Fives",flagHtml:"&#x1F1EC;&#x1F1E7;",supported:false,summary:"Coming soon: score during play when open ends total a multiple of 5."},fivesAndThrees:{id:"fivesAndThrees",name:"Fives and Threes",flagHtml:"&#x1F1EC;&#x1F1E7;",supported:false,summary:"Coming soon: score on multiples of 3 and 5."},fiveUp:{id:"fiveUp",name:"Five Up",flagHtml:"&#x1F1FA;&#x1F1F8;",supported:false,summary:"Coming soon: multiples-of-5 scoring with double spinners."},mexicanTrain:{id:"mexicanTrain",name:"Mexican Train",flagHtml:"&#x1F682;",supported:false,summary:"Coming soon: individual penalty scoring where lowest cumulative score wins."},chickenFoot:{id:"chickenFoot",name:"Chicken Foot",flagHtml:"&#x1F413;",supported:false,summary:"Coming soon: individual penalty scoring with chicken-foot double rules."}};
-let premios=[100,75,50,25];let tapPoints=[];let stream=null;let liveActive=false,liveTimer=null,lastLiveCount=0,liveWorkCanvas=null,tallyTotal=0,tallySweeps=0;let state={team1Score:0,team2Score:0,premioUsed:[false,false,false,false],history:[],gameTracker:[],gameStarted:false,celebrationDismissed:false,setupOpen:false,selectedRuleSet:"puertoRican",regionConfirmed:false};
-function $(id){return document.getElementById(id)}function activeRule(){return RULE_SETS[state.selectedRuleSet]||RULE_SETS.puertoRican}function teamName(t){return t===1?($("team1Name").value.trim()||"Team 1"):($("team2Name").value.trim()||"Team 2")}function target(){return Number($("targetScore").value)||activeRule().defaultTarget}function mode(){return $("premiosMode").value}function now(){return new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}function selectedWinner(){return Number(document.querySelector('input[name="handWinnerRadio"]:checked').value)}function nextPremioIndex(){return state.premioUsed.findIndex(x=>!x)}
+let premios=[100,75,50,25];let tapPoints=[];let stream=null;let liveActive=false,liveTimer=null,lastLiveCount=0,liveWorkCanvas=null,tallyTotal=0,tallySweeps=0;let state={team1Score:0,team2Score:0,premioUsed:[false,false,false,false],history:[],gameTracker:[],gameStarted:false,celebrationDismissed:false,setupOpen:false,selectedRuleSet:"puertoRican",regionConfirmed:false,playersList:[]};
+let session={active:false,code:null,isHost:false,playerId:null,playerName:null};let sessionUnsub=null;let lastAppliedSessionRuleSet=null;let settingsPushTimer=null;
+function $(id){return document.getElementById(id)}function activeRule(){return RULE_SETS[state.selectedRuleSet]||RULE_SETS.puertoRican}function teamName(t){return t===1?($("team1Name").value.trim()||"Team 1"):($("team2Name").value.trim()||"Team 2")}function target(){return Number($("targetScore").value)||activeRule().defaultTarget}function mode(){return $("premiosMode").value}function now(){return new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}function selectedWinner(){return Number(document.querySelector('input[name="handWinnerRadio"]:checked').value)}function nextPremioIndex(){return state.premioUsed.findIndex(x=>!x)}function escapeHtml(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}function whenFirebaseReady(cb){if(window.FirebaseBridge){cb()}else{window.addEventListener("firebase-ready",cb,{once:true})}}
 
 function openRegionModal(allowClose=false){
   $("regionModal").classList.add("show");
@@ -238,16 +282,22 @@ function bootRegionGate(){
 
 function renderRegionSelector(){let grid=$("regionGrid"),sel=$("regionSelect");grid.innerHTML="";sel.innerHTML="";Object.values(RULE_SETS).forEach(r=>{let c=document.createElement("div");c.className="region-card"+(r.id===state.selectedRuleSet?" active":"")+(!r.supported?" unsupported":"");c.onclick=()=>selectRuleSet(r.id);c.innerHTML=`<div class="region-flag">${r.flagHtml}</div><div class="region-name">${r.name}</div><div class="region-summary">${r.summary}</div><div class="region-tag ${r.supported?"":"coming"}">${r.supported?"Available":"Coming Soon"}</div>`;grid.appendChild(c);let o=document.createElement("option");o.value=r.id;o.innerHTML=`${r.flagHtml} ${r.name}${r.supported?"":" - Coming Soon"}`;if(r.id===state.selectedRuleSet)o.selected=true;sel.appendChild(o)});$("selectedStyleTitle").innerHTML=activeRule().flagHtml+" "+activeRule().name;$("selectedStyleSummary").innerHTML=activeRule().summary}
 function selectRuleSet(id){let r=RULE_SETS[id];if(!r)return;if(!r.supported){alert(r.name+" is staged for a future scoring screen. Puerto Rican, Cuban, and Dominican work now.");$("regionSelect").value=state.selectedRuleSet;renderRegionSelector();return}state.selectedRuleSet=id;state.regionConfirmed=true;applyRuleSet(id);state.setupOpen=true;closeRegionModal();render();saveAndRender()}
-function applyRuleSet(id){let r=RULE_SETS[id]||RULE_SETS.puertoRican;premios=r.premios||[];state.premioUsed=premios.map(()=>false);let ts=$("targetScore");ts.innerHTML="";r.targetOptions.forEach(v=>{let o=document.createElement("option");o.value=v;o.textContent=v+" points";if(v===r.defaultTarget)o.selected=true;ts.appendChild(o)});let ps=$("premiosMode");ps.innerHTML="";if(premios.length){let on=document.createElement("option");on.value="on";on.textContent="Auto: "+premios.join(" / ");ps.appendChild(on);let off=document.createElement("option");off.value="off";off.textContent="Off";ps.appendChild(off);ps.value="on";ps.disabled=false}else{let off=document.createElement("option");off.value="off";off.textContent="No premios for this style";ps.appendChild(off);ps.value="off";ps.disabled=true}let bt=$("bonusType");bt.innerHTML="";r.bonuses.forEach(b=>{let o=document.createElement("option");o.value=b[0];o.dataset.points=b[2];o.innerHTML=b[2]?`${b[1]} +${b[2]}`:b[1];bt.appendChild(o)});bonusChanged()}
-function applySetupVisibility(){let collapsed=state.gameStarted&&!state.setupOpen;$("setupBody").classList.toggle("hidden",collapsed);$("setupCollapsed").classList.toggle("hidden",!collapsed);$("hideSetupBtn").classList.toggle("hidden",collapsed||!state.gameStarted);$("hero").classList.toggle("compact",collapsed)}function startGame(){state.gameStarted=true;state.setupOpen=false;applySetupVisibility();saveAndRender();window.scrollTo({top:0,behavior:"smooth"})}function hideSetup(){state.gameStarted=true;state.setupOpen=false;applySetupVisibility();saveAndRender()}function showSetup(){state.setupOpen=true;applySetupVisibility();saveAndRender()}
-function bonusChanged(){let s=$("bonusType"),o=s.options[s.selectedIndex];if(o&&s.value!=="custom")$("bonusPoints").value=o.dataset.points||0}function scoreHand(){let team=selectedWinner(),dom=Number($("handPoints").value)||0,bonus=Number($("bonusPoints").value)||0,label=$("bonusType").options[$("bonusType").selectedIndex].text.replace(" +0","").replace(" +100",""),note=$("handNote").value.trim(),premio=0,pi=-1;if(mode()==="on"&&premios.length){pi=nextPremioIndex();if(pi>=0){premio=premios[pi];state.premioUsed[pi]=true}}let total=dom+bonus+premio;if(total===0&&!confirm("This hand is adding 0 points. Continue?"))return;addScore(team,total,{reason:"Hand score",detail:`${dom} domino points${premio?" + "+premio+" premio":""}${bonus?" + "+bonus+" "+label:""}${note?" &bull; "+note:""}`,premioIdx:pi});clearHandForm()}function clearHandForm(){$("handPoints").value="";$("bonusType").value="none";$("bonusPoints").value="0";$("handNote").value="";resetTally()}
-function manualAdjust(team,dir){let raw=Number($("manualPoints").value);if(!raw||raw<=0){alert("Enter a point value first.");return}addScore(team,raw*dir,{reason:$("manualReason").value,detail:dir>0?"Manual add":"Manual subtract"});$("manualPoints").value=""}function addScore(team,pts,meta){state.gameStarted=true;state.setupOpen=false;if(team===1)state.team1Score=Math.max(0,state.team1Score+pts);else state.team2Score=Math.max(0,state.team2Score+pts);state.history.unshift({team,teamName:teamName(team),points:pts,reason:meta.reason||"Score",detail:meta.detail||"",premioIdx:meta.premioIdx??-1,time:now()});state.celebrationDismissed=false;saveAndRender()}
-function undoLast(){if(!state.history.length){alert("No score history to undo.");return}let l=state.history.shift();if(l.team===1)state.team1Score=Math.max(0,state.team1Score-l.points);else state.team2Score=Math.max(0,state.team2Score-l.points);if(l.premioIdx>=0)state.premioUsed[l.premioIdx]=false;state.celebrationDismissed=false;saveAndRender()}function recordCompletedGame(){if(state.team1Score===0&&state.team2Score===0)return false;let n1=teamName(1),n2=teamName(2),s1=state.team1Score,s2=state.team2Score,w=s1>=s2?n1:n2,l=s1>=s2?n2:n1,ls=s1>=s2?s2:s1;state.gameTracker.unshift({winner:w,loser:l,team1Name:n1,team2Name:n2,team1Score:s1,team2Score:s2,target:target(),chiva:ls===0,style:activeRule().name,time:now()});return true}
-function resetBoard(){state.team1Score=0;state.team2Score=0;state.premioUsed=premios.map(()=>false);state.history=[];state.gameStarted=false;state.setupOpen=true;state.celebrationDismissed=false;$("celebrationOverlay").classList.remove("show")}function startNewGame(){recordCompletedGame();resetBoard();saveAndRender();window.scrollTo({top:0,behavior:"smooth"})}function resetCurrentGame(){if(!confirm("Reset only the current game? The tracker will stay."))return;resetBoard();saveAndRender()}function clearTracker(){if(!confirm("Clear the game tracker too?"))return;state.gameTracker=[];resetBoard();saveAndRender()}
-function snapshot(){return{state,team1Name:$("team1Name").value,team2Name:$("team2Name").value,targetScore:$("targetScore").value,autoSaveToggle:$("autoSaveToggle").checked}}function restore(d){if(!d)return;state=d.state||state;if(!state.gameTracker)state.gameTracker=[];if(!state.selectedRuleSet)state.selectedRuleSet="puertoRican";if(state.regionConfirmed===undefined)state.regionConfirmed=false;$("team1Name").value=d.team1Name||"Team A";$("team2Name").value=d.team2Name||"Team B";$("autoSaveToggle").checked=d.autoSaveToggle!==false;applyRuleSet(state.selectedRuleSet);if(d.targetScore)$("targetScore").value=d.targetScore}function saveGame(){localStorage.setItem("prDominoSavedGameV11",JSON.stringify(snapshot()));alert("Game saved on this device.")}function loadGame(){restore(JSON.parse(localStorage.getItem("prDominoSavedGameV11")||"null"));render()}function saveAndRender(){if($("autoSaveToggle").checked)localStorage.setItem("prDominoAutoSaveV11",JSON.stringify(snapshot()));render()}function loadAutoSave(){restore(JSON.parse(localStorage.getItem("prDominoAutoSaveV11")||"null"))}
-function render(){let t=target(),n1=teamName(1),n2=teamName(2);$("team1Display").textContent=n1;$("team2Display").textContent=n2;$("team1Score").textContent=state.team1Score;$("team2Score").textContent=state.team2Score;$("team1Needed").textContent=state.team1Score>=t?"Winner!":"Needs "+Math.max(0,t-state.team1Score);$("team2Needed").textContent=state.team2Score>=t?"Winner!":"Needs "+Math.max(0,t-state.team2Score);$("team1Bar").style.width=Math.min(100,state.team1Score/t*100)+"%";$("team2Bar").style.width=Math.min(100,state.team2Score/t*100)+"%";$("team1Box").classList.toggle("winning",state.team1Score>state.team2Score);$("team2Box").classList.toggle("winning",state.team2Score>state.team1Score);$("radioTeam1").textContent=n1;$("radioTeam2").textContent=n2;$("addManual1").textContent="Add "+n1;$("addManual2").textContent="Add "+n2;$("subManual1").textContent="Subtract "+n1;$("subManual2").textContent="Subtract "+n2;$("premioPills").innerHTML=(!premios.length||mode()==="off")?'<span class="pill used">Premios off</span>':premios.map((p,i)=>`<span class="pill ${state.premioUsed[i]?'used':''}">${i+1}${ordinal(i+1)} premio: ${p}</span>`).join("");$("miniTarget").textContent=t;$("miniStyle").textContent=activeRule().name;renderRegionSelector();applySetupVisibility();renderHistory();renderGameTracker();let wb=$("winnerBox");if(state.team1Score>=t||state.team2Score>=t){let w=state.team1Score>=t&&state.team1Score>=state.team2Score?n1:n2;wb.style.display="block";wb.innerHTML="&#x1F3C6; "+w+" wins the game!";if(!state.celebrationDismissed)showCelebration(w)}else{wb.style.display="none";$("celebrationOverlay").classList.remove("show");state.celebrationDismissed=false}}
-function ordinal(n){return n===1?"st":n===2?"nd":n===3?"rd":"th"}function renderHistory(){if(!state.history.length){$("historyList").innerHTML='<div class="historyItem">No points added yet.</div>';return}$("historyList").innerHTML=state.history.map(h=>`<div class="historyItem"><strong>${h.teamName}</strong> ${h.points>0?"+":""}${h.points}<br><span class="small">${h.reason}${h.detail?" &bull; "+h.detail:""} &bull; ${h.time}</span></div>`).join("")}function renderGameTracker(){if(!state.gameTracker.length){$("gameTrackerList").innerHTML='<div class="historyItem">No completed games yet.</div>';return}$("gameTrackerList").innerHTML=state.gameTracker.map((g,i)=>`<div class="historyItem"><strong>Game ${state.gameTracker.length-i}: ${g.winner} wins</strong> ${g.chiva?'<span class="pill used" style="text-decoration:none">Chiva</span>':""}<br><span class="small">${g.team1Name} ${g.team1Score} - ${g.team2Score} ${g.team2Name} &bull; ${g.style||"Domino"} &bull; ${g.time}</span></div>`).join("")}
-function showCelebration(w){$("celebrateWinnerName").innerHTML="&#x1F3C6; "+w+" Wins! &#x1F3C6;";$("celebrationOverlay").classList.add("show")}function hideCelebration(){$("celebrationOverlay").classList.remove("show");state.celebrationDismissed=true;saveAndRender()}
+function applyRuleSet(id,resetPremios=true){let r=RULE_SETS[id]||RULE_SETS.puertoRican;premios=r.premios||[];if(resetPremios)state.premioUsed=premios.map(()=>false);let ts=$("targetScore");ts.innerHTML="";r.targetOptions.forEach(v=>{let o=document.createElement("option");o.value=v;o.textContent=v+" points";if(v===r.defaultTarget)o.selected=true;ts.appendChild(o)});let ps=$("premiosMode");ps.innerHTML="";if(premios.length){let on=document.createElement("option");on.value="on";on.textContent="Auto: "+premios.join(" / ");ps.appendChild(on);let off=document.createElement("option");off.value="off";off.textContent="Off";ps.appendChild(off);ps.value="on";ps.disabled=false}else{let off=document.createElement("option");off.value="off";off.textContent="No premios for this style";ps.appendChild(off);ps.value="off";ps.disabled=true}let bt=$("bonusType");bt.innerHTML="";r.bonuses.forEach(b=>{let o=document.createElement("option");o.value=b[0];o.dataset.points=b[2];o.innerHTML=b[2]?`${b[1]} +${b[2]}`:b[1];bt.appendChild(o)});bonusChanged()}
+function applySetupVisibility(){let collapsed=state.gameStarted&&!state.setupOpen;$("setupBody").classList.toggle("hidden",collapsed);$("setupCollapsed").classList.toggle("hidden",!collapsed);$("hideSetupBtn").classList.toggle("hidden",collapsed||!state.gameStarted);$("hero").classList.toggle("compact",collapsed)}function startGame(){state.gameStarted=true;state.setupOpen=false;applySetupVisibility();if(session.active)pushSessionSettings({gameStarted:true});saveAndRender();window.scrollTo({top:0,behavior:"smooth"})}function hideSetup(){state.gameStarted=true;state.setupOpen=false;applySetupVisibility();saveAndRender()}function showSetup(){state.setupOpen=true;applySetupVisibility();saveAndRender()}
+function bonusChanged(){let s=$("bonusType"),o=s.options[s.selectedIndex];if(o&&s.value!=="custom")$("bonusPoints").value=o.dataset.points||0}function scoreHand(){let team=selectedWinner(),dom=Number($("handPoints").value)||0,bonus=Number($("bonusPoints").value)||0,label=$("bonusType").options[$("bonusType").selectedIndex].text.replace(" +0","").replace(" +100",""),note=$("handNote").value.trim(),premio=0,pi=-1;if(mode()==="on"&&premios.length){pi=nextPremioIndex();if(pi>=0){premio=premios[pi];state.premioUsed[pi]=true}}let total=dom+bonus+premio;if(total===0&&!confirm("This hand is adding 0 points. Continue?"))return;addScore(team,total,{reason:"Hand score",detail:`${dom} domino points${premio?" + "+premio+" premio":""}${bonus?" + "+bonus+" "+label:""}${note?" • "+note:""}`,premioIdx:pi});clearHandForm()}function clearHandForm(){$("handPoints").value="";$("bonusType").value="none";$("bonusPoints").value="0";$("handNote").value="";resetTally()}
+function manualAdjust(team,dir){let raw=Number($("manualPoints").value);if(!raw||raw<=0){alert("Enter a point value first.");return}addScore(team,raw*dir,{reason:$("manualReason").value,detail:dir>0?"Manual add":"Manual subtract"});$("manualPoints").value=""}
+function addScore(team,pts,meta){if(session.active){sessionPushHistory(team,pts,meta);return}state.gameStarted=true;state.setupOpen=false;if(team===1)state.team1Score=Math.max(0,state.team1Score+pts);else state.team2Score=Math.max(0,state.team2Score+pts);state.history.unshift({team,teamName:teamName(team),points:pts,reason:meta.reason||"Score",detail:meta.detail||"",premioIdx:meta.premioIdx??-1,time:now()});state.celebrationDismissed=false;saveAndRender()}
+function undoLast(){if(!state.history.length){alert("No score history to undo.");return}if(session.active){let l=state.history[0],bridge=window.FirebaseBridge;bridge.remove(bridge.ref(bridge.db,`sessions/${session.code}/history/${l._key}`)).catch(e=>alert("Couldn't undo: "+e.message));return}let l=state.history.shift();if(l.team===1)state.team1Score=Math.max(0,state.team1Score-l.points);else state.team2Score=Math.max(0,state.team2Score-l.points);if(l.premioIdx>=0)state.premioUsed[l.premioIdx]=false;state.celebrationDismissed=false;saveAndRender()}
+function recordCompletedGame(){if(state.team1Score===0&&state.team2Score===0)return false;let n1=teamName(1),n2=teamName(2),s1=state.team1Score,s2=state.team2Score,w=s1>=s2?n1:n2,l=s1>=s2?n2:n1,ls=s1>=s2?s2:s1;let entry={winner:w,loser:l,team1Name:n1,team2Name:n2,team1Score:s1,team2Score:s2,target:target(),chiva:ls===0,style:activeRule().name,time:now()};if(session.active){let bridge=window.FirebaseBridge;bridge.push(bridge.ref(bridge.db,`sessions/${session.code}/gameTracker`),entry).catch(e=>alert("Couldn't save the game: "+e.message))}else{state.gameTracker.unshift(entry)}return true}
+function resetBoard(){if(session.active){let bridge=window.FirebaseBridge;bridge.remove(bridge.ref(bridge.db,`sessions/${session.code}/history`)).catch(()=>{});pushSessionSettings({gameStarted:false});$("celebrationOverlay").classList.remove("show");return}state.team1Score=0;state.team2Score=0;state.premioUsed=premios.map(()=>false);state.history=[];state.gameStarted=false;state.setupOpen=true;state.celebrationDismissed=false;$("celebrationOverlay").classList.remove("show")}
+function startNewGame(){recordCompletedGame();resetBoard();saveAndRender();window.scrollTo({top:0,behavior:"smooth"})}function resetCurrentGame(){if(!confirm("Reset only the current game? The tracker will stay."))return;resetBoard();saveAndRender()}
+function clearTracker(){if(!confirm("Clear the game tracker too?"))return;if(session.active){let bridge=window.FirebaseBridge;bridge.remove(bridge.ref(bridge.db,`sessions/${session.code}/gameTracker`)).catch(()=>{})}else{state.gameTracker=[]}resetBoard();saveAndRender()}
+function snapshot(){return{state,team1Name:$("team1Name").value,team2Name:$("team2Name").value,targetScore:$("targetScore").value,autoSaveToggle:$("autoSaveToggle").checked}}function restore(d){if(!d)return;state=d.state||state;if(!state.gameTracker)state.gameTracker=[];if(!state.selectedRuleSet)state.selectedRuleSet="puertoRican";if(state.regionConfirmed===undefined)state.regionConfirmed=false;if(!state.playersList)state.playersList=[];$("team1Name").value=d.team1Name||"Team A";$("team2Name").value=d.team2Name||"Team B";$("autoSaveToggle").checked=d.autoSaveToggle!==false;applyRuleSet(state.selectedRuleSet);if(d.targetScore)$("targetScore").value=d.targetScore}function saveGame(){localStorage.setItem("prDominoSavedGameV11",JSON.stringify(snapshot()));alert("Game saved on this device.")}function loadGame(){restore(JSON.parse(localStorage.getItem("prDominoSavedGameV11")||"null"));render()}
+function saveAndRender(){if(session.active){clearTimeout(settingsPushTimer);settingsPushTimer=setTimeout(()=>pushSessionSettings(),400)}else if($("autoSaveToggle").checked){localStorage.setItem("prDominoAutoSaveV11",JSON.stringify(snapshot()))}render()}
+function loadAutoSave(){restore(JSON.parse(localStorage.getItem("prDominoAutoSaveV11")||"null"))}
+function render(){let t=target(),n1=teamName(1),n2=teamName(2);$("team1Display").textContent=n1;$("team2Display").textContent=n2;$("team1Score").textContent=state.team1Score;$("team2Score").textContent=state.team2Score;$("team1Needed").textContent=state.team1Score>=t?"Winner!":"Needs "+Math.max(0,t-state.team1Score);$("team2Needed").textContent=state.team2Score>=t?"Winner!":"Needs "+Math.max(0,t-state.team2Score);$("team1Bar").style.width=Math.min(100,state.team1Score/t*100)+"%";$("team2Bar").style.width=Math.min(100,state.team2Score/t*100)+"%";$("team1Box").classList.toggle("winning",state.team1Score>state.team2Score);$("team2Box").classList.toggle("winning",state.team2Score>state.team1Score);$("radioTeam1").textContent=n1;$("radioTeam2").textContent=n2;$("addManual1").textContent="Add "+n1;$("addManual2").textContent="Add "+n2;$("subManual1").textContent="Subtract "+n1;$("subManual2").textContent="Subtract "+n2;$("premioPills").innerHTML=(!premios.length||mode()==="off")?'<span class="pill used">Premios off</span>':premios.map((p,i)=>`<span class="pill ${state.premioUsed[i]?'used':''}">${i+1}${ordinal(i+1)} premio: ${p}</span>`).join("");$("miniTarget").textContent=t;$("miniStyle").textContent=activeRule().name;renderRegionSelector();applySetupVisibility();renderHistory();renderGameTracker();renderSessionCard();let wb=$("winnerBox");if(state.team1Score>=t||state.team2Score>=t){let w=state.team1Score>=t&&state.team1Score>=state.team2Score?n1:n2;wb.style.display="block";wb.innerHTML="&#x1F3C6; "+escapeHtml(w)+" wins the game!";if(!state.celebrationDismissed)showCelebration(w)}else{wb.style.display="none";$("celebrationOverlay").classList.remove("show");state.celebrationDismissed=false}}
+function ordinal(n){return n===1?"st":n===2?"nd":n===3?"rd":"th"}function renderHistory(){if(!state.history.length){$("historyList").innerHTML='<div class="historyItem">No points added yet.</div>';return}$("historyList").innerHTML=state.history.map(h=>`<div class="historyItem"><strong>${escapeHtml(h.teamName)}</strong> ${h.points>0?"+":""}${h.points}<br><span class="small">${escapeHtml(h.reason)}${h.detail?" • "+escapeHtml(h.detail):""} • ${escapeHtml(h.time)}</span></div>`).join("")}function renderGameTracker(){if(!state.gameTracker.length){$("gameTrackerList").innerHTML='<div class="historyItem">No completed games yet.</div>';return}$("gameTrackerList").innerHTML=state.gameTracker.map((g,i)=>`<div class="historyItem"><strong>Game ${state.gameTracker.length-i}: ${escapeHtml(g.winner)} wins</strong> ${g.chiva?'<span class="pill used" style="text-decoration:none">Chiva</span>':""}<br><span class="small">${escapeHtml(g.team1Name)} ${g.team1Score} - ${g.team2Score} ${escapeHtml(g.team2Name)} • ${escapeHtml(g.style||"Domino")} • ${escapeHtml(g.time)}</span></div>`).join("")}
+function showCelebration(w){$("celebrateWinnerName").innerHTML="&#x1F3C6; "+escapeHtml(w)+" Wins! &#x1F3C6;";$("celebrationOverlay").classList.add("show")}function hideCelebration(){$("celebrationOverlay").classList.remove("show");state.celebrationDismissed=true;saveAndRender()}
 function toggleCameraInfo(){let b=$("cameraInfo");b.style.display=b.style.display==="block"?"none":"block"}
 function toggleManualMode(){let b=$("manualModeBody"),hidden=b.classList.toggle("hidden");$("manualModeToggle").textContent=hidden?"Manual Photo Mode":"Hide Manual Photo Mode"}
 async function startCamera(){try{closeCamera();stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});$("video").srcObject=stream;$("videoStage").classList.add("show");$("snapshot").style.display="none"}catch(e){alert("Camera could not open. Check camera permission.")}}
@@ -309,6 +359,166 @@ function undoTap(){tapPoints.pop();drawTapMarkers()}
 function resetTapCount(resetBase=true){tapPoints=[];if(resetBase)$("snapshot").baseImage=null;$("tapCount").textContent="0";$("suggestedCountBox").style.display="none";drawTapMarkers()}
 function useTapCount(){$("handPoints").value=tapPoints.length;window.scrollTo({top:$("handPoints").getBoundingClientRect().top+window.scrollY-120,behavior:"smooth"})}
 function autoCountPips(){let c=$("snapshot");if(!c.width||c.style.display==="none"){alert("Take a photo first.");return}let ctx=c.getContext("2d");if(!c.baseImage)c.baseImage=ctx.getImageData(0,0,c.width,c.height);let img=c.baseImage,w=img.width,h=img.height,maxSide=900,sc=Math.min(1,maxSide/Math.max(w,h)),sw=Math.round(w*sc),sh=Math.round(h*sc),oc=document.createElement("canvas");oc.width=w;oc.height=h;oc.getContext("2d").putImageData(img,0,0);let wc=document.createElement("canvas");wc.width=sw;wc.height=sh;let wx=wc.getContext("2d");wx.drawImage(oc,0,0,sw,sh);let data=wx.getImageData(0,0,sw,sh).data,pips=detectPips(data,sw,sh);tapPoints=pips.map(p=>({x:p.x/sc,y:p.y/sc}));drawTapMarkers();$("suggestedCount").textContent=tapPoints.length;$("suggestedCountBox").style.display="block";if(confirm("Suggested count is "+tapPoints.length+". Use this as Domino Points?"))$("handPoints").value=tapPoints.length}
+/* ---- Shared sessions: Firebase Realtime Database mirrors game state across devices.
+   Score-affecting actions are appended as history events (never mutated in place), so
+   simultaneous writes from different players can never conflict; team totals and premios
+   are always derived by summing that history on every update. ---- */
+function getDeviceId(){let id=localStorage.getItem("prDominoDeviceIdV1");if(!id){id="p_"+Math.random().toString(36).slice(2,10)+Date.now().toString(36);localStorage.setItem("prDominoDeviceIdV1",id)}return id}
+function generateSessionCode(){const chars="ABCDEFGHJKMNPQRSTUVWXYZ23456789";let code="";for(let i=0;i<6;i++)code+=chars[Math.floor(Math.random()*chars.length)];return code}
+async function sessionExists(code){let bridge=window.FirebaseBridge;let snap=await bridge.get(bridge.ref(bridge.db,`sessions/${code}/meta`));return snap.exists()}
+async function generateUniqueSessionCode(){for(let i=0;i<5;i++){let code=generateSessionCode();if(!(await sessionExists(code)))return code}return generateSessionCode()+Date.now().toString(36).slice(-2)}
+
+async function startSession(){
+  if(!window.FirebaseBridge||!window.FirebaseBridge.enabled){alert("Ask the app owner to finish the one-time Firebase setup to enable shared sessions.");return}
+  if(session.active)leaveSession(true);
+  let name=prompt("Your name (shown to other players):",session.playerName||"Host");
+  if(name===null)return;
+  name=name.trim()||"Host";
+  try{
+    let bridge=window.FirebaseBridge,playerId=getDeviceId(),code=await generateUniqueSessionCode();
+    let payload={meta:{createdAt:bridge.serverTimestamp(),hostId:playerId},settings:{selectedRuleSet:state.selectedRuleSet||"puertoRican",team1Name:$("team1Name").value||"Team A",team2Name:$("team2Name").value||"Team B",targetScore:$("targetScore").value||String(activeRule().defaultTarget),premiosMode:$("premiosMode").value||"on",gameStarted:false},players:{[playerId]:{name,isHost:true,joinedAt:bridge.serverTimestamp()}}};
+    await bridge.set(bridge.ref(bridge.db,`sessions/${code}`),payload);
+    session={active:true,code,isHost:true,playerId,playerName:name};
+    persistSession();subscribeToSession(code);render();
+  }catch(e){alert("Couldn't start a session: "+e.message)}
+}
+function openJoinPrompt(){
+  if(!window.FirebaseBridge||!window.FirebaseBridge.enabled){alert("Ask the app owner to finish the one-time Firebase setup to enable shared sessions.");return}
+  let code=prompt("Enter the session code:");
+  if(!code)return;
+  code=code.trim().toUpperCase();
+  let name=prompt("Your name (shown to other players):","Player");
+  if(name===null)return;
+  joinSession(code,name.trim()||"Player");
+}
+async function joinSession(code,name){
+  if(!window.FirebaseBridge||!window.FirebaseBridge.enabled){alert("Ask the app owner to finish the one-time Firebase setup to enable shared sessions.");return}
+  if(session.active&&session.code===code)return;
+  if(session.active)leaveSession(true);
+  try{
+    let exists=await sessionExists(code);
+    if(!exists){alert('No session found with code "'+code+'". Double-check with the host.');return}
+    let bridge=window.FirebaseBridge,playerId=getDeviceId();
+    await bridge.set(bridge.ref(bridge.db,`sessions/${code}/players/${playerId}`),{name,isHost:false,joinedAt:bridge.serverTimestamp()});
+    session={active:true,code,isHost:false,playerId,playerName:name};
+    persistSession();subscribeToSession(code);render();
+  }catch(e){alert("Couldn't join that session: "+e.message)}
+}
+function leaveSession(silent){
+  if(!session.active)return;
+  let bridge=window.FirebaseBridge,code=session.code,playerId=session.playerId;
+  if(bridge&&bridge.enabled&&code&&playerId)bridge.remove(bridge.ref(bridge.db,`sessions/${code}/players/${playerId}`)).catch(()=>{});
+  unsubscribeSession();
+  session={active:false,code:null,isHost:false,playerId:null,playerName:null};
+  localStorage.removeItem("prDominoSessionV1");
+  loadAutoSave();applyRuleSet(state.selectedRuleSet||"puertoRican");render();
+  if(!silent)alert("You left the shared session. Back to your solo game on this device.");
+}
+function endSession(){
+  if(!confirm("End this session for everyone? Everyone still connected will be disconnected."))return;
+  let bridge=window.FirebaseBridge,code=session.code;
+  bridge.remove(bridge.ref(bridge.db,`sessions/${code}`)).catch(()=>{});
+  leaveSession(true);
+}
+function unsubscribeSession(){if(sessionUnsub){sessionUnsub();sessionUnsub=null}lastAppliedSessionRuleSet=null}
+function subscribeToSession(code){
+  unsubscribeSession();
+  let bridge=window.FirebaseBridge,sref=bridge.ref(bridge.db,"sessions/"+code);
+  sessionUnsub=bridge.onValue(sref,snap=>{
+    let val=snap.val();
+    if(!val){if(session.active){alert("This session has ended.");leaveSession(true)}return}
+    hydrateSessionState(val);render();
+  });
+  let myPlayerRef=bridge.ref(bridge.db,`sessions/${code}/players/${session.playerId}`);
+  bridge.onDisconnect(myPlayerRef).remove();
+}
+function pushSessionSettings(extra){
+  if(!session.active)return;
+  let bridge=window.FirebaseBridge;
+  let payload=Object.assign({selectedRuleSet:state.selectedRuleSet,team1Name:$("team1Name").value,team2Name:$("team2Name").value,targetScore:$("targetScore").value,premiosMode:$("premiosMode").value,gameStarted:!!state.gameStarted},extra||{});
+  bridge.update(bridge.ref(bridge.db,`sessions/${session.code}/settings`),payload).catch(e=>console.log(e));
+}
+function sessionPushHistory(team,pts,meta){
+  let bridge=window.FirebaseBridge;
+  let entry={team:team===2?2:1,teamName:teamName(team),points:Number(pts)||0,reason:meta.reason||"Score",detail:meta.detail||"",premioIdx:Number.isInteger(meta.premioIdx)?meta.premioIdx:-1,time:now()};
+  bridge.push(bridge.ref(bridge.db,`sessions/${session.code}/history`),entry).catch(e=>alert("Couldn't add that score: "+e.message));
+  pushSessionSettings({gameStarted:true});
+}
+function hydrateSessionState(val){
+  let st=val.settings||{};
+  let rs=st.selectedRuleSet||"puertoRican";
+  if(rs!==lastAppliedSessionRuleSet){applyRuleSet(rs,false);lastAppliedSessionRuleSet=rs}
+  if(st.team1Name!==undefined&&document.activeElement!==$("team1Name"))$("team1Name").value=st.team1Name;
+  if(st.team2Name!==undefined&&document.activeElement!==$("team2Name"))$("team2Name").value=st.team2Name;
+  if(st.targetScore!==undefined)$("targetScore").value=st.targetScore;
+  if(st.premiosMode!==undefined)$("premiosMode").value=st.premiosMode;
+  state.selectedRuleSet=rs;state.regionConfirmed=true;state.gameStarted=!!st.gameStarted;
+  applySetupVisibility();
+
+  let histEntries=Object.entries(val.history||{}).sort((a,b)=>a[0]<b[0]?-1:1);
+  state.team1Score=0;state.team2Score=0;state.premioUsed=premios.map(()=>false);
+  histEntries.forEach(([k,h])=>{let team=Number(h.team)===2?2:1,pts=Number(h.points)||0;if(team===1)state.team1Score+=pts;else state.team2Score+=pts;let pi=Number.isInteger(h.premioIdx)?h.premioIdx:-1;if(pi>=0&&pi<state.premioUsed.length)state.premioUsed[pi]=true});
+  state.team1Score=Math.max(0,state.team1Score);state.team2Score=Math.max(0,state.team2Score);
+  state.history=histEntries.slice().reverse().map(([k,h])=>({_key:k,team:Number(h.team)===2?2:1,teamName:String(h.teamName||""),points:Number(h.points)||0,reason:String(h.reason||"Score"),detail:String(h.detail||""),premioIdx:Number.isInteger(h.premioIdx)?h.premioIdx:-1,time:String(h.time||"")}));
+
+  let trackEntries=Object.entries(val.gameTracker||{}).sort((a,b)=>a[0]<b[0]?-1:1);
+  state.gameTracker=trackEntries.slice().reverse().map(([k,g])=>({_key:k,winner:String(g.winner||""),loser:String(g.loser||""),team1Name:String(g.team1Name||""),team2Name:String(g.team2Name||""),team1Score:Number(g.team1Score)||0,team2Score:Number(g.team2Score)||0,target:Number(g.target)||0,chiva:!!g.chiva,style:String(g.style||"Domino"),time:String(g.time||"")}));
+
+  state.playersList=Object.entries(val.players||{}).map(([id,p])=>({id,name:String((p&&p.name)||"Player"),isHost:!!(p&&p.isHost)}));
+}
+function persistSession(){localStorage.setItem("prDominoSessionV1",JSON.stringify({code:session.code,isHost:session.isHost,playerId:session.playerId,playerName:session.playerName}))}
+function tryRestoreSession(){
+  let raw=localStorage.getItem("prDominoSessionV1");
+  if(!raw)return;
+  let saved;try{saved=JSON.parse(raw)}catch(e){return}
+  if(!saved||!saved.code)return;
+  whenFirebaseReady(async()=>{
+    if(!window.FirebaseBridge.enabled)return;
+    try{
+      let exists=await sessionExists(saved.code);
+      if(!exists){localStorage.removeItem("prDominoSessionV1");return}
+      let bridge=window.FirebaseBridge;
+      await bridge.set(bridge.ref(bridge.db,`sessions/${saved.code}/players/${saved.playerId}`),{name:saved.playerName,isHost:!!saved.isHost,joinedAt:bridge.serverTimestamp()});
+      session={active:true,code:saved.code,isHost:!!saved.isHost,playerId:saved.playerId,playerName:saved.playerName};
+      subscribeToSession(saved.code);render();
+    }catch(e){console.log(e)}
+  });
+}
+function checkJoinLinkOnBoot(){
+  let m=location.hash.match(/join=([A-Za-z0-9]+)/);
+  if(!m)return;
+  let code=m[1].toUpperCase();
+  history.replaceState(null,"",location.pathname+location.search);
+  whenFirebaseReady(()=>{
+    if(!window.FirebaseBridge.enabled)return;
+    if(session.active&&session.code===code)return;
+    if(!confirm("Join shared session "+code+"?"))return;
+    let name=prompt("Your name (shown to other players):","Player");
+    if(name===null)return;
+    joinSession(code,name.trim()||"Player");
+  });
+}
+function sessionLink(){return location.origin+location.pathname+"#join="+session.code}
+function shareSessionLink(){let url=sessionLink();if(navigator.share){navigator.share({title:"Join my domino game",text:"Join my Domino Boricua session with code "+session.code,url}).catch(()=>{})}else copySessionLink()}
+function copySessionLink(){let url=sessionLink();if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(()=>alert("Link copied! Code: "+session.code)).catch(()=>alert("Copy this link:\n"+url))}else alert("Copy this link:\n"+url)}
+function watchConnectionState(){let bridge=window.FirebaseBridge;bridge.onValue(bridge.ref(bridge.db,".info/connected"),snap=>{let pill=$("sessionStatusPill");if(!pill)return;let ok=snap.val()===true;pill.textContent=ok?"Live":"Reconnecting…";pill.classList.toggle("used",!ok)})}
+function renderSessionPlayers(){let box=$("sessionPlayersList");if(!box)return;let list=state.playersList||[];box.innerHTML=list.length?list.map(p=>`<span class="pill">${p.isHost?"&#x1F451; ":""}${escapeHtml(p.name)}${p.id===session.playerId?" (you)":""}</span>`).join(""):'<span class="pill used">No one connected</span>'}
+function renderSessionCard(){
+  let solo=$("sessionCardSolo"),active=$("sessionCardActive");
+  if(!solo||!active)return;
+  if(session.active){
+    solo.classList.add("hidden");active.classList.remove("hidden");
+    $("sessionCodeDisplay").textContent=session.code||"------";
+    $("endSessionBtn").style.display=session.isHost?"":"none";
+    renderSessionPlayers();
+  }else{
+    solo.classList.remove("hidden");active.classList.add("hidden");
+    let enabled=!!(window.FirebaseBridge&&window.FirebaseBridge.enabled);
+    $("startSessionBtn").disabled=!enabled;$("joinSessionBtn").disabled=!enabled;
+    $("sessionSetupHint").style.display=enabled?"none":"block";
+  }
+}
+
 let deferredInstallPrompt=null;
 function isStandalone(){return window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true}
 function isIos(){return /iphone|ipad|ipod/i.test(navigator.userAgent)}
@@ -319,6 +529,7 @@ window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredIns
 window.addEventListener("appinstalled",()=>{$("installBanner").classList.remove("show")});
 
 loadAutoSave();applyRuleSet(state.selectedRuleSet||"puertoRican");bonusChanged();render();bootRegionGate();showIosInstallHintIfNeeded();
+tryRestoreSession();checkJoinLinkOnBoot();whenFirebaseReady(()=>{watchConnectionState();renderSessionCard()});
 if("serviceWorker"in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(e=>console.log(e)))}
 </script>
 </body>
