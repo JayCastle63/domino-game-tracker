@@ -121,7 +121,7 @@
     @media(max-width:560px){body{padding:calc(18px + env(safe-area-inset-top)) 8px calc(18px + env(safe-area-inset-bottom))}.card{padding:12px}h1{font-size:1.18rem}.score{font-size:2.35rem}.grid2{grid-template-columns:1fr}.scoreboard{gap:8px}button{font-size:.9rem;padding:12px 8px}.icon-grid{grid-template-columns:repeat(4,1fr)!important}.region-grid{grid-template-columns:1fr 1fr}.team{padding:10px}.teamName{font-size:.86rem}}
 
     /* ---- Interactive Puerto Rican domino table (play vs. computer) ---- */
-    .domino-modal{position:fixed;inset:0;z-index:10001;display:none;flex-direction:column;background:linear-gradient(160deg,#0a3d1f,#062615);padding:calc(8px + env(safe-area-inset-top)) 6px calc(8px + env(safe-area-inset-bottom));overflow:hidden}
+    .domino-modal{position:fixed;inset:0;z-index:10001;display:none;flex-direction:column;background-image:linear-gradient(rgba(4,20,10,.72),rgba(4,20,10,.76)),url('assets/table-tray.jpg');background-size:cover;background-position:center;background-repeat:no-repeat;padding:calc(8px + env(safe-area-inset-top)) 6px calc(8px + env(safe-area-inset-bottom));overflow:hidden}
     .domino-modal.show{display:flex}
     .dg-topbar{display:flex;align-items:center;justify-content:space-between;color:#fff;padding:2px 4px 6px;flex:none}
     .dg-topbar h2{color:#fff;margin:0;font-size:1rem}
@@ -129,8 +129,11 @@
     .dg-turn{text-align:center;color:#dfe9d9;font-weight:900;font-size:.88rem;padding:2px 4px 6px;flex:none;min-height:1.2em}
     .dg-turn.you{color:var(--gold)}
     .dg-oppRow{display:flex;justify-content:center;gap:10px;flex:none;padding:2px}
-    .dg-seat{background:rgba(255,255,255,.14);border-radius:12px;padding:5px 10px;color:#fff;font-size:.74rem;font-weight:800;text-align:center;white-space:nowrap}
+    .dg-seat{background:rgba(255,255,255,.14);border-radius:12px;padding:5px 8px;color:#fff;font-size:.74rem;font-weight:800;text-align:center;white-space:nowrap;display:flex;flex-direction:column;align-items:center;gap:3px}
     .dg-seat.turn{background:var(--gold);color:#3b2800}
+    .dg-back-fan{display:flex}
+    .dg-back{width:11px;height:16px;background:url('assets/coqui-back.jpg') 50% 46%/280% no-repeat;border:1.5px solid var(--gold);border-radius:3px;box-shadow:0 2px 0 rgba(0,0,0,.35);flex:none}
+    .dg-back+.dg-back{margin-left:-6px}
     .dg-mid{flex:1;display:flex;align-items:center;min-height:0}
     .dg-board{flex:1;overflow:auto;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:3px;padding:6px;max-height:100%}
     .dg-end-zone{border:3px dashed transparent;border-radius:10px;padding:2px;display:flex;align-items:center}
@@ -738,6 +741,7 @@ function buildDominoSet(){let s=[];for(let a=0;a<=6;a++)for(let b=a;b<=6;b++)s.p
 function shuffleArr(arr){for(let i=arr.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
 function halfHtml(n){let dots=(DG_PIP_POS[n]||[]).map(([r,c])=>`<div class="dt-dot" style="grid-row:${r};grid-column:${c}"></div>`).join("");return `<div class="dt-half">${dots}</div>`}
 function tileHtml(a,b,big){return `<div class="domino-tile${big?" lg":""}${a===b?" isdouble":""}">${halfHtml(a)}${halfHtml(b)}</div>`}
+function dgSeatHtml(label,count){let n=Math.min(count,7),fan="";for(let i=0;i<n;i++)fan+=`<span class="dg-back"></span>`;return `<div>${label} • ${count}</div><div class="dg-back-fan">${fan}</div>`}
 
 function openDominoGame(){
   if(state.selectedRuleSet!=="puertoRican"){alert("Play vs Computer is available for Puerto Rican style right now.");return}
@@ -879,9 +883,9 @@ function dgRenderResult(){
 }
 function dgRender(){
   if(!dgame)return;
-  $("dgSeatNorth").textContent="Partner • "+dgame.hands[2].length;
-  $("dgSeatWest").textContent="West • "+dgame.hands[1].length;
-  $("dgSeatEast").textContent="East • "+dgame.hands[3].length;
+  $("dgSeatNorth").innerHTML=dgSeatHtml("Partner",dgame.hands[2].length);
+  $("dgSeatWest").innerHTML=dgSeatHtml("West",dgame.hands[1].length);
+  $("dgSeatEast").innerHTML=dgSeatHtml("East",dgame.hands[3].length);
   $("dgSeatNorth").classList.toggle("turn",dgame.turn===2&&!dgame.over);
   $("dgSeatWest").classList.toggle("turn",dgame.turn===1&&!dgame.over);
   $("dgSeatEast").classList.toggle("turn",dgame.turn===3&&!dgame.over);

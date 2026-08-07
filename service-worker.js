@@ -1,11 +1,13 @@
-const CACHE_NAME = "domino-boricua-v3";
+const CACHE_NAME = "domino-boricua-v4";
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
   "./manifest.json",
   "./icons/icon-180.png",
   "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./icons/icon-512.png",
+  "./assets/table-tray.jpg",
+  "./assets/coqui-back.jpg"
 ];
 
 self.addEventListener("install", event => {
