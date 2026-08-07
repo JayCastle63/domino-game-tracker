@@ -743,38 +743,43 @@ function halfHtml(n){let dots=(DG_PIP_POS[n]||[]).map(([r,c])=>`<div class="dt-d
 function tileHtml(a,b,big){return `<div class="domino-tile${big?" lg":""}${a===b?" isdouble":""}">${halfHtml(a)}${halfHtml(b)}</div>`}
 function dgSeatHtml(label,count){let n=Math.min(count,7),fan="";for(let i=0;i<n;i++)fan+=`<span class="dg-back"></span>`;return `<div>${label} • ${count}</div><div class="dg-back-fan">${fan}</div>`}
 
-/* Lays the chain out the way it's actually played on a table: matching pips end to end,
-   doubles turned crosswise, and the line "snaking" back and forth (a run to one side, a short
-   drop, a run back the other way) instead of just spilling off the edge of the screen. */
+/* Lays the chain out the way it's actually played on a table: a straight run left to right,
+   matching pips end to end, doubles turned crosswise. When a run hits the edge (6 tiles) the
+   line turns and runs a short way (4 tiles) across, then heads back the other direction —
+   a bracket shape, not a diagonal stair-step. A double's footprint along the line is its
+   short side (it's turned sideways), so it steps forward less than a straight tile does —
+   that's what keeps every tile actually touching the next one instead of leaving a gap. */
+const DG_TILE_LEN=38,DG_TILE_WID=27,DG_TILE_GAP=3;
 function dgBoardLayout(board){
-  const STEP=40,RUN_LEN=6;
-  let x=0,y=0,goingRight=true,runCount=0,mode="horiz",placements=[];
+  const HORIZ_RUN=6,VERT_RUN=4;
+  let x=0,y=0,goingRight=true,mode="horiz",count=0,placements=[];
   for(const t of board){
     let isDouble=t.left===t.right,horizontal=mode==="horiz";
     placements.push({tile:t,x,y,horizontal,isDouble});
+    let step=(isDouble?DG_TILE_WID:DG_TILE_LEN)+DG_TILE_GAP;
     if(mode==="horiz"){
-      x+=goingRight?STEP:-STEP;
-      runCount++;
-      if(runCount>=RUN_LEN){mode="turn";runCount=0}
+      x+=goingRight?step:-step;
+      count++;
+      if(count>=HORIZ_RUN){mode="vert";count=0}
     }else{
-      y+=STEP;
-      mode="horiz";
-      goingRight=!goingRight;
+      y+=step;
+      count++;
+      if(count>=VERT_RUN){mode="horiz";count=0;goingRight=!goingRight}
     }
   }
   return placements;
 }
 function dgBoardHtml(board){
   if(!board.length)return '<div class="small" style="color:#cfe3d5">Empty table — someone leads</div>';
-  const TW=38,TH=27,PAD=16;
+  const PAD=16;
   let layout=dgBoardLayout(board);
   let xs=layout.map(p=>p.x),ys=layout.map(p=>p.y);
   let minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
-  let offX=-minX+TW/2+PAD,offY=-minY+TH/2+PAD;
-  let boardW=(maxX-minX)+TW+PAD*2,boardH=(maxY-minY)+TH+PAD*2;
+  let offX=-minX+DG_TILE_LEN/2+PAD,offY=-minY+DG_TILE_LEN/2+PAD;
+  let boardW=(maxX-minX)+DG_TILE_LEN+PAD*2,boardH=(maxY-minY)+DG_TILE_LEN+PAD*2;
   let tiles=layout.map(p=>{
     let rotate=p.isDouble?(p.horizontal?90:0):(p.horizontal?0:90);
-    let left=p.x+offX-TW/2,top=p.y+offY-TH/2;
+    let left=p.x+offX-DG_TILE_LEN/2,top=p.y+offY-DG_TILE_WID/2;
     return `<div style="position:absolute;left:${left}px;top:${top}px;transform:rotate(${rotate}deg)">${tileHtml(p.tile.left,p.tile.right,false)}</div>`;
   }).join("");
   return `<div style="position:relative;width:${boardW}px;height:${boardH}px;flex:none">${tiles}</div>`;
