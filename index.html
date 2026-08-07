@@ -119,6 +119,46 @@
     .celebration{display:none;position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden;background:radial-gradient(circle at center,rgba(255,255,255,.15),rgba(0,0,0,.45))}.celebration.show{display:block}.flag-fall{position:absolute;top:-12vh;font-size:2rem;animation:fall linear infinite,sway ease-in-out infinite;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35));opacity:.95}.flag-fall:nth-child(1){left:4%;animation-duration:7s,3.2s}.flag-fall:nth-child(2){left:16%;animation-duration:8.5s,4.1s}.flag-fall:nth-child(3){left:28%;animation-duration:7.8s,3.7s}.flag-fall:nth-child(4){left:42%;animation-duration:9s,4.5s}.flag-fall:nth-child(5){left:57%;animation-duration:8.2s,3.6s}.flag-fall:nth-child(6){left:72%;animation-duration:7.2s,3.1s}.flag-fall:nth-child(7){left:88%;animation-duration:8.8s,4.8s}.celebrate-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,560px);background:rgba(255,255,255,.94);border:4px solid var(--gold);border-radius:24px;box-shadow:0 18px 40px rgba(0,0,0,.35);padding:18px;text-align:center;pointer-events:auto}.celebrate-title{font-size:1.6rem;font-weight:900;color:var(--dark);line-height:1.15;margin:0}.celebrate-sub{margin-top:8px;color:var(--muted);font-size:.95rem;font-weight:700}.coqui{font-size:3.8rem;display:inline-block;animation:bounceDance 1.2s ease-in-out infinite}.celebrate-btn{margin-top:14px;background:var(--dark);color:white;border:none;border-radius:14px;padding:12px 16px;font-weight:900;font-size:.95rem;cursor:pointer}
     @keyframes fall{0%{transform:translateY(-15vh) rotate(0deg)}100%{transform:translateY(120vh) rotate(360deg)}}@keyframes sway{0%,100%{margin-left:0}50%{margin-left:18px}}@keyframes bounceDance{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-16px) rotate(10deg)}}
     @media(max-width:560px){body{padding:calc(18px + env(safe-area-inset-top)) 8px calc(18px + env(safe-area-inset-bottom))}.card{padding:12px}h1{font-size:1.18rem}.score{font-size:2.35rem}.grid2{grid-template-columns:1fr}.scoreboard{gap:8px}button{font-size:.9rem;padding:12px 8px}.icon-grid{grid-template-columns:repeat(4,1fr)!important}.region-grid{grid-template-columns:1fr 1fr}.team{padding:10px}.teamName{font-size:.86rem}}
+
+    /* ---- Interactive Puerto Rican domino table (play vs. computer) ---- */
+    .domino-modal{position:fixed;inset:0;z-index:10001;display:none;flex-direction:column;background-image:linear-gradient(rgba(4,20,10,.72),rgba(4,20,10,.76)),url('assets/table-tray.jpg');background-size:cover;background-position:center;background-repeat:no-repeat;padding:calc(8px + env(safe-area-inset-top)) 6px calc(8px + env(safe-area-inset-bottom));overflow:hidden}
+    .domino-modal.show{display:flex}
+    .dg-topbar{display:flex;align-items:center;justify-content:space-between;color:#fff;padding:2px 4px 6px;flex:none}
+    .dg-topbar h2{color:#fff;margin:0;font-size:1rem}
+    .dg-close{background:rgba(255,255,255,.18);padding:8px 12px;font-size:.8rem}
+    .dg-turn{text-align:center;color:#dfe9d9;font-weight:900;font-size:.88rem;padding:2px 4px 6px;flex:none;min-height:1.2em}
+    .dg-turn.you{color:var(--gold)}
+    .dg-oppRow{display:flex;justify-content:center;gap:10px;flex:none;padding:2px}
+    .dg-seat{background:rgba(255,255,255,.14);border-radius:12px;padding:5px 8px;color:#fff;font-size:.74rem;font-weight:800;text-align:center;white-space:nowrap;display:flex;flex-direction:column;align-items:center;gap:3px}
+    .dg-seat.turn{background:var(--gold);color:#3b2800}
+    .dg-back-fan{display:flex}
+    .dg-back{width:11px;height:16px;background:url('assets/coqui-back.jpg') 50% 46%/280% no-repeat;border:1.5px solid var(--gold);border-radius:3px;box-shadow:0 2px 0 rgba(0,0,0,.35);flex:none}
+    .dg-back+.dg-back{margin-left:-6px}
+    .dg-mid{flex:1;display:flex;align-items:center;min-height:0}
+    .dg-board{flex:1;overflow:auto;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:3px;padding:6px;max-height:100%}
+    .dg-end-zone{border:3px dashed transparent;border-radius:10px;padding:2px;display:flex;align-items:center}
+    .dg-end-zone.legal{border-color:var(--gold);animation:dgPulse 1s ease-in-out infinite}
+    @keyframes dgPulse{0%,100%{box-shadow:0 0 0 0 rgba(245,197,66,.5)}50%{box-shadow:0 0 0 6px rgba(245,197,66,0)}}
+    .dg-hand{flex:none;display:flex;justify-content:center;gap:6px;flex-wrap:wrap;padding:8px 4px calc(4px + env(safe-area-inset-bottom));min-height:56px}
+    .domino-tile{background:#fdfaf3;border:2px solid #1a1a1a;border-radius:6px;display:flex;flex-direction:row;box-shadow:0 2px 0 rgba(0,0,0,.35);cursor:pointer;transition:.15s;flex:none}
+    .domino-tile .dt-half{width:19px;height:27px;border-right:2px solid #1a1a1a;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:2px}
+    .domino-tile .dt-half:last-child{border-right:0}
+    .domino-tile.lg .dt-half{width:29px;height:41px;padding:3px}
+    .dt-dot{width:4px;height:4px;border-radius:50%;background:#17253c;align-self:center;justify-self:center}
+    .domino-tile.lg .dt-dot{width:6px;height:6px}
+    .domino-tile.selected{transform:translateY(-9px);box-shadow:0 6px 14px rgba(245,197,66,.7);border-color:var(--gold)}
+    .domino-tile.disabled{opacity:.4;cursor:default}
+    .domino-tile.isdouble{border-color:var(--gold)}
+    .dg-actions{flex:none;display:flex;justify-content:center;gap:10px;padding:4px 0 2px}
+    .dg-actions button{padding:11px 18px;font-size:.85rem}
+    .dg-result{position:absolute;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:20px;z-index:2}
+    .dg-result.show{display:flex}
+    .dg-result-card{background:#fff;border-radius:20px;padding:20px;max-width:380px;max-height:calc(100vh - 40px);overflow:auto;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+    .dg-result-title{font-size:1.3rem;font-weight:900;color:var(--dark);margin:0 0 6px}
+    .dg-result-detail{color:var(--muted);font-size:.88rem;line-height:1.4;margin-bottom:12px}
+    .dg-hands-reveal{text-align:left;background:#f6f8fb;border-radius:14px;padding:10px;margin-bottom:12px;font-size:.8rem;color:var(--text)}
+    .dg-hands-reveal .seat-row{margin-bottom:6px}
+    @media(max-width:380px){.domino-tile .dt-half{width:16px;height:24px}.domino-tile.lg .dt-half{width:25px;height:36px}}
   </style>
 </head>
 <body>
@@ -176,6 +216,12 @@
     </div>
     <div class="hidden" id="setupCollapsed"><div class="small">Setup hidden. Target: <strong id="miniTarget">500</strong> &bull; Style: <strong id="miniStyle">Puerto Rican</strong></div><button class="mini-button" style="margin-top:10px" onclick="showSetup()">Edit Setup</button><button class="region-change-button" onclick="openRegionModal(true)">Change Domino Style</button></div>
     <div class="pillrow" id="premioPills"></div>
+  </div>
+
+  <div class="card hidden" id="playComputerCard">
+    <h2 class="title">Play vs. Computer</h2>
+    <div class="small">Play a real hand of Puerto Rican dominoes right now, no setup needed &mdash; you and a computer partner against two computer opponents. The result is scored automatically onto the board above.</div>
+    <button class="green" style="margin-top:10px;width:100%" onclick="openDominoGame()">Deal Me In</button>
   </div>
 
   <div class="card" id="sessionCard">
@@ -285,6 +331,31 @@
   <div class="footer">Hecho para la mesa, la familia y el domin&oacute; &#x1F1F5;&#x1F1F7;</div>
 </div>
 
+<div class="domino-modal" id="dominoModal">
+  <div class="dg-topbar"><h2>Puerto Rican Dominoes</h2><button class="dg-close" onclick="closeDominoGame()">&#10005; Leave Table</button></div>
+  <div class="dg-oppRow"><div class="dg-seat" id="dgSeatNorth">Partner &bull; 7</div></div>
+  <div class="dg-mid">
+    <div class="dg-seat" id="dgSeatWest">West &bull; 7</div>
+    <div class="dg-board" id="dgBoard"></div>
+    <div class="dg-seat" id="dgSeatEast">East &bull; 7</div>
+  </div>
+  <div class="dg-turn" id="dgTurnLabel">Dealing&hellip;</div>
+  <div class="dg-hand" id="dgHand"></div>
+  <div class="dg-actions">
+    <button class="gold" id="dgPlayLeftBtn" onclick="dgHumanPlayEnd('left')" style="display:none">Play Left (&#8592;<span id="dgLeftVal"></span>)</button>
+    <button class="gold" id="dgPlayRightBtn" onclick="dgHumanPlayEnd('right')" style="display:none">Play Right (<span id="dgRightVal"></span>&#8594;)</button>
+    <button class="gray" id="dgPassBtn" onclick="dgHumanPass()" style="display:none">Pass</button>
+  </div>
+  <div class="dg-result" id="dgResult">
+    <div class="dg-result-card">
+      <div class="dg-result-title" id="dgResultTitle">Hand Over</div>
+      <div class="dg-result-detail" id="dgResultDetail"></div>
+      <div class="dg-hands-reveal" id="dgHandsReveal"></div>
+      <div class="grid2"><button class="green" onclick="dgNextHand()">Next Hand</button><button class="gray" onclick="closeDominoGame()">Leave Table</button></div>
+    </div>
+  </div>
+</div>
+
 <script>
 const RULE_SETS={
   puertoRican:{id:"puertoRican",name:"Puerto Rican",flagHtml:"&#x1F1F5;&#x1F1F7;",supported:true,category:"team",defaultTarget:500,targetOptions:[500,200],premios:[100,75,50,25],bonuses:[["none","None",0],["chuchazo","Chuchazo",100],["capicu","Capic&uacute;",100],["dominao","Dominao",0],["trancado","Trancado / Tranque",0],["custom","Custom",0]],summary:"Double-six, 2 teams, higher score wins, premios, Chuchazo, and Capic&uacute;. Play to 500 with premios, or 200 for a straight game with no premios."},
@@ -369,7 +440,7 @@ function clearTracker(){if(blockedForViewer())return;if(!confirm("Clear the game
 function snapshot(){return{state,team1Name:$("team1Name").value,team2Name:$("team2Name").value,targetScore:$("targetScore").value,autoSaveToggle:$("autoSaveToggle").checked}}function restore(d){if(!d)return;state=d.state||state;if(!state.gameTracker)state.gameTracker=[];if(!state.selectedRuleSet)state.selectedRuleSet="puertoRican";if(state.regionConfirmed===undefined)state.regionConfirmed=false;if(!state.playersList)state.playersList=[];if(!state.players)state.players=[];if(!state.rounds)state.rounds=[];$("team1Name").value=d.team1Name||"Team A";$("team2Name").value=d.team2Name||"Team B";$("autoSaveToggle").checked=d.autoSaveToggle!==false;applyRuleSet(state.selectedRuleSet);if(d.targetScore)$("targetScore").value=d.targetScore}function saveGame(){localStorage.setItem("prDominoSavedGameV11",JSON.stringify(snapshot()));alert("Game saved on this device.")}function loadGame(){restore(JSON.parse(localStorage.getItem("prDominoSavedGameV11")||"null"));render()}
 function saveAndRender(){if(session.active){clearTimeout(settingsPushTimer);settingsPushTimer=setTimeout(()=>pushSessionSettings(),400)}else if($("autoSaveToggle").checked){localStorage.setItem("prDominoAutoSaveV11",JSON.stringify(snapshot()))}render()}
 function loadAutoSave(){restore(JSON.parse(localStorage.getItem("prDominoAutoSaveV11")||"null"))}
-function render(){let t=target(),n1=teamName(1),n2=teamName(2);$("team1Display").textContent=n1;$("team2Display").textContent=n2;$("team1Score").textContent=state.team1Score;$("team2Score").textContent=state.team2Score;$("team1Needed").textContent=state.team1Score>=t?"Winner!":"Needs "+Math.max(0,t-state.team1Score);$("team2Needed").textContent=state.team2Score>=t?"Winner!":"Needs "+Math.max(0,t-state.team2Score);$("team1Bar").style.width=Math.min(100,state.team1Score/t*100)+"%";$("team2Bar").style.width=Math.min(100,state.team2Score/t*100)+"%";$("team1Box").classList.toggle("winning",state.team1Score>state.team2Score);$("team2Box").classList.toggle("winning",state.team2Score>state.team1Score);$("radioTeam1").textContent=n1;$("radioTeam2").textContent=n2;$("addManual1").textContent="Add "+n1;$("addManual2").textContent="Add "+n2;$("subManual1").textContent="Subtract "+n1;$("subManual2").textContent="Subtract "+n2;$("premioPills").innerHTML=(!premios.length||mode()==="off")?'<span class="pill used">Premios off</span>':premios.map((p,i)=>`<span class="pill ${state.premioUsed[i]?'used':''}">${i+1}${ordinal(i+1)} premio: ${p}</span>`).join("");$("miniTarget").textContent=t;$("miniStyle").textContent=activeRule().name;renderRegionSelector();applySetupVisibility();renderHistory();renderGameTracker();renderSessionCard();applyCategoryVisibility();applyRoleVisibility();updateScoreHandLabels();let qt1=$("quickScoreTeam1Label"),qt2=$("quickScoreTeam2Label");if(qt1)qt1.textContent=n1;if(qt2)qt2.textContent=n2;renderRoster();renderLeaderboard();renderRoundEntryFields();renderRoundHistory();renderCameraTargetPlayerOptions();let wb=$("winnerBox"),isTeamTarget=activeRule().category!=="individual"&&t>0;if(isTeamTarget&&(state.team1Score>=t||state.team2Score>=t)){let w=state.team1Score>=t&&state.team1Score>=state.team2Score?n1:n2;wb.style.display="block";wb.innerHTML="&#x1F3C6; "+escapeHtml(w)+" wins the game!";if(!state.celebrationDismissed)showCelebration(w)}else{wb.style.display="none";$("celebrationOverlay").classList.remove("show");state.celebrationDismissed=false}}
+function render(){let t=target(),n1=teamName(1),n2=teamName(2);$("team1Display").textContent=n1;$("team2Display").textContent=n2;$("team1Score").textContent=state.team1Score;$("team2Score").textContent=state.team2Score;$("team1Needed").textContent=state.team1Score>=t?"Winner!":"Needs "+Math.max(0,t-state.team1Score);$("team2Needed").textContent=state.team2Score>=t?"Winner!":"Needs "+Math.max(0,t-state.team2Score);$("team1Bar").style.width=Math.min(100,state.team1Score/t*100)+"%";$("team2Bar").style.width=Math.min(100,state.team2Score/t*100)+"%";$("team1Box").classList.toggle("winning",state.team1Score>state.team2Score);$("team2Box").classList.toggle("winning",state.team2Score>state.team1Score);$("radioTeam1").textContent=n1;$("radioTeam2").textContent=n2;$("addManual1").textContent="Add "+n1;$("addManual2").textContent="Add "+n2;$("subManual1").textContent="Subtract "+n1;$("subManual2").textContent="Subtract "+n2;$("premioPills").innerHTML=(!premios.length||mode()==="off")?'<span class="pill used">Premios off</span>':premios.map((p,i)=>`<span class="pill ${state.premioUsed[i]?'used':''}">${i+1}${ordinal(i+1)} premio: ${p}</span>`).join("");$("miniTarget").textContent=t;$("miniStyle").textContent=activeRule().name;renderRegionSelector();applySetupVisibility();renderHistory();renderGameTracker();renderSessionCard();applyCategoryVisibility();applyRoleVisibility();updateScoreHandLabels();let pcCard=$("playComputerCard");if(pcCard)pcCard.classList.toggle("hidden",state.selectedRuleSet!=="puertoRican"||session.active);let qt1=$("quickScoreTeam1Label"),qt2=$("quickScoreTeam2Label");if(qt1)qt1.textContent=n1;if(qt2)qt2.textContent=n2;renderRoster();renderLeaderboard();renderRoundEntryFields();renderRoundHistory();renderCameraTargetPlayerOptions();let wb=$("winnerBox"),isTeamTarget=activeRule().category!=="individual"&&t>0;if(isTeamTarget&&(state.team1Score>=t||state.team2Score>=t)){let w=state.team1Score>=t&&state.team1Score>=state.team2Score?n1:n2;wb.style.display="block";wb.innerHTML="&#x1F3C6; "+escapeHtml(w)+" wins the game!";if(!state.celebrationDismissed)showCelebration(w)}else{wb.style.display="none";$("celebrationOverlay").classList.remove("show");state.celebrationDismissed=false}}
 function ordinal(n){return n===1?"st":n===2?"nd":n===3?"rd":"th"}function renderHistory(){if(!state.history.length){$("historyList").innerHTML='<div class="historyItem">No points added yet.</div>';return}$("historyList").innerHTML=state.history.map(h=>`<div class="historyItem"><strong>${escapeHtml(h.teamName)}</strong> ${h.points>0?"+":""}${h.points}<br><span class="small">${escapeHtml(h.reason)}${h.detail?" • "+escapeHtml(h.detail):""} • ${escapeHtml(h.time)}</span></div>`).join("")}function renderGameTracker(){if(!state.gameTracker.length){$("gameTrackerList").innerHTML='<div class="historyItem">No completed games yet.</div>';return}$("gameTrackerList").innerHTML=state.gameTracker.map((g,i)=>{if(g.mode==="individual"){let rank=(g.ranking||[]).map((p,idx)=>`${idx+1}. ${escapeHtml(p.name)} (${Number(p.total)||0})`).join(" • ");let winnerName=(g.ranking&&g.ranking[0]&&g.ranking[0].name)||"?";return `<div class="historyItem"><strong>Game ${state.gameTracker.length-i}: ${escapeHtml(winnerName)} wins</strong><br><span class="small">${rank||"No players"} • ${escapeHtml(g.style||"Domino")} • ${escapeHtml(g.time)}</span></div>`}return `<div class="historyItem"><strong>Game ${state.gameTracker.length-i}: ${escapeHtml(g.winner)} wins</strong> ${g.chiva?'<span class="pill used" style="text-decoration:none">Chiva</span>':""}<br><span class="small">${escapeHtml(g.team1Name)} ${g.team1Score} - ${g.team2Score} ${escapeHtml(g.team2Name)} • ${escapeHtml(g.style||"Domino")} • ${escapeHtml(g.time)}</span></div>`}).join("")}
 function showCelebration(w){$("celebrateWinnerName").innerHTML="&#x1F3C6; "+escapeHtml(w)+" Wins! &#x1F3C6;";$("celebrationOverlay").classList.add("show")}function hideCelebration(){$("celebrationOverlay").classList.remove("show");state.celebrationDismissed=true;saveAndRender()}
 function toggleCameraInfo(){let b=$("cameraInfo");b.style.display=b.style.display==="block"?"none":"block"}
@@ -658,6 +729,191 @@ function renderRoundHistory(){let box=$("roundHistoryList");if(!box)return;let r
 function renderCameraTargetPlayerOptions(){let sel=$("cameraTargetPlayer");if(!sel)return;let list=state.players||[],prev=sel.value;sel.innerHTML=list.map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join("");if(list.some(p=>p.id===prev))sel.value=prev}
 function updateScoreHandLabels(){let r=activeRule(),isMultiple=r.category==="multiple",title=$("scoreHandTitle"),desc=$("scoreHandDesc"),lbl=$("handPointsLabel");if(!title)return;title.textContent=isMultiple?"End Hand — Domino Out":"Score a Hand";desc.innerHTML=isMultiple?"When someone dominoes or the hand blocks, count the pips left in the other hands — it&rsquo;s rounded to the nearest 5 automatically.":"Select who won the hand, enter the dots left in the losing team&rsquo;s hands, and the next premio applies automatically when premios are on.";lbl.textContent=isMultiple?"Pips Left (rounds to nearest 5)":"Domino Points"}
 function applyCategoryVisibility(){let cat=activeRule().category||"team";let isIndividual=cat==="individual",isMultiple=cat==="multiple";["scoreHandCard","manualAdjustCard","teamScoreboardCard","scoreHistoryCard","teamNameRow","targetPremiosRow"].forEach(id=>{let el=$(id);if(el)el.classList.toggle("hidden",isIndividual)});["rosterCard","leaderboardCard","roundEntryCard","roundHistoryCard"].forEach(id=>{let el=$(id);if(el)el.classList.toggle("hidden",!isIndividual)});let qc=$("quickScoreCard");if(qc)qc.classList.toggle("hidden",!isMultiple);let ctp=$("cameraTargetPlayerRow");if(ctp)ctp.classList.toggle("hidden",!isIndividual)}
+
+/* ---- Play vs Computer: a real hand of Puerto Rican dominoes, played locally, no network
+   needed. Seats: 0=You, 1=West(opp), 2=Partner, 3=East(opp) — seats 0&2 are Team 1, 1&3 are
+   Team 2, turn order 0->1->2->3 so partners never play consecutively, matching a real table.
+   Finished hands feed straight into the normal addScore() pipeline, so premios/history/
+   session-sync (when not in a shared session) all just work unmodified. ---- */
+let dgame=null;let dgGeneration=0;
+const DG_PIP_POS={0:[],1:[[2,2]],2:[[1,1],[3,3]],3:[[1,1],[2,2],[3,3]],4:[[1,1],[1,3],[3,1],[3,3]],5:[[1,1],[1,3],[2,2],[3,1],[3,3]],6:[[1,1],[2,1],[3,1],[1,3],[2,3],[3,3]]};
+function buildDominoSet(){let s=[];for(let a=0;a<=6;a++)for(let b=a;b<=6;b++)s.push({a,b});return s}
+function shuffleArr(arr){for(let i=arr.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+function halfHtml(n){let dots=(DG_PIP_POS[n]||[]).map(([r,c])=>`<div class="dt-dot" style="grid-row:${r};grid-column:${c}"></div>`).join("");return `<div class="dt-half">${dots}</div>`}
+function tileHtml(a,b,big){return `<div class="domino-tile${big?" lg":""}${a===b?" isdouble":""}">${halfHtml(a)}${halfHtml(b)}</div>`}
+function dgSeatHtml(label,count){let n=Math.min(count,7),fan="";for(let i=0;i<n;i++)fan+=`<span class="dg-back"></span>`;return `<div>${label} • ${count}</div><div class="dg-back-fan">${fan}</div>`}
+
+function openDominoGame(){
+  if(state.selectedRuleSet!=="puertoRican"){alert("Play vs Computer is available for Puerto Rican style right now.");return}
+  if(session.active){alert("Leave the shared session first — Play vs Computer is a solo local game.");return}
+  $("dominoModal").classList.add("show");
+  $("dgResult").classList.remove("show");
+  dgDealFirstHand();
+  dgProceed();
+}
+function closeDominoGame(){$("dominoModal").classList.remove("show");dgame=null;dgGeneration++}
+
+function dgDealFirstHand(){
+  let set=shuffleArr(buildDominoSet()),hands=[[],[],[],[]];
+  for(let i=0;i<28;i++)hands[i%4].push(set[i]);
+  hands.forEach(h=>h.sort((x,y)=>(x.a-y.a)||(x.b-y.b)));
+  let starter=hands.findIndex(h=>h.some(t=>t.a===6&&t.b===6));
+  dgGeneration++;
+  dgame={hands,board:[],leftEnd:null,rightEnd:null,turn:starter,starter,passesInRow:0,over:false,log:[],result:null,selectedIdx:undefined,forceDoubleSixLead:true};
+}
+function dgDealNextHand(starterSeat){
+  let set=shuffleArr(buildDominoSet()),hands=[[],[],[],[]];
+  for(let i=0;i<28;i++)hands[i%4].push(set[i]);
+  hands.forEach(h=>h.sort((x,y)=>(x.a-y.a)||(x.b-y.b)));
+  dgGeneration++;
+  dgame={hands,board:[],leftEnd:null,rightEnd:null,turn:starterSeat,starter:starterSeat,passesInRow:0,over:false,log:[],result:null,selectedIdx:undefined,forceDoubleSixLead:false};
+}
+function dgNextHand(){$("dgResult").classList.remove("show");let next=dgame.result.type==="domino"?dgame.lastWinnerSeat:(dgame.starter+1)%4;dgDealNextHand(next);dgProceed()}
+
+function dgLegalPlaysForSeat(seat){
+  let hand=dgame.hands[seat],out=[];
+  if(dgame.board.length===0){
+    if(dgame.forceDoubleSixLead){let t=hand.find(t=>t.a===6&&t.b===6);if(t)out.push({tile:t,end:"lead"})}
+    else hand.forEach(t=>out.push({tile:t,end:"lead"}));
+    return out;
+  }
+  hand.forEach(t=>{
+    if(t.a===dgame.leftEnd||t.b===dgame.leftEnd)out.push({tile:t,end:"left"});
+    if(t.a===dgame.rightEnd||t.b===dgame.rightEnd)out.push({tile:t,end:"right"});
+  });
+  return out;
+}
+function dgPlayTile(seat,tile,end){
+  let hand=dgame.hands[seat],idx=hand.findIndex(t=>t.a===tile.a&&t.b===tile.b);
+  let preLeftEnd=dgame.leftEnd,preRightEnd=dgame.rightEnd;
+  hand.splice(idx,1);
+  if(end==="lead"){dgame.board=[{left:tile.a,right:tile.b}];dgame.leftEnd=tile.a;dgame.rightEnd=tile.b}
+  else if(end==="left"){let other=tile.a===dgame.leftEnd?tile.b:tile.a;dgame.board.unshift({left:other,right:dgame.leftEnd});dgame.leftEnd=other}
+  else{let other=tile.a===dgame.rightEnd?tile.b:tile.a;dgame.board.push({left:dgame.rightEnd,right:other});dgame.rightEnd=other}
+  dgame.log.push({seat,tile:{a:tile.a,b:tile.b},end,preLeftEnd,preRightEnd});
+  dgame.passesInRow=0;
+  dgAfterAction(seat,hand.length===0);
+}
+function dgPassTurn(seat){dgame.passesInRow++;dgame.log.push({seat,pass:true});dgAfterAction(seat,false)}
+function dgAfterAction(seat,wentOut){
+  if(wentOut){dgFinishHand({type:"domino",seat});return}
+  if(dgame.passesInRow>=4){dgFinishHand({type:"block"});return}
+  dgame.turn=(dgame.turn+1)%4;
+  dgProceed();
+}
+function dgProceed(){
+  if(!dgame)return;
+  dgRender();
+  if(!dgame.over&&dgame.turn!==0){
+    let gen=dgGeneration,seat=dgame.turn;
+    setTimeout(()=>{if(dgame&&dgGeneration===gen)dgAiPlay(seat)},500+Math.random()*450);
+  }
+}
+function dgChooseAiMove(seat){
+  let moves=dgLegalPlaysForSeat(seat);
+  if(!moves.length)return null;
+  if(dgame.hands[seat].length===1)return moves[0];
+  function resultEndValue(m){if(m.end==="lead")return m.tile.a===m.tile.b?m.tile.a:Math.max(m.tile.a,m.tile.b);let cur=m.end==="left"?dgame.leftEnd:dgame.rightEnd;return m.tile.a===cur?m.tile.b:m.tile.a}
+  function seenCount(val){let c=0;dgame.log.forEach(e=>{if(e.tile&&(e.tile.a===val||e.tile.b===val))c++});return c}
+  function score(m){return (m.tile.a+m.tile.b)+(m.tile.a===m.tile.b?15:0)+seenCount(resultEndValue(m))*3}
+  moves.sort((m1,m2)=>score(m2)-score(m1));
+  return moves[0];
+}
+function dgAiPlay(seat){
+  if(!dgame||dgame.over||dgame.turn!==seat)return;
+  let move=dgChooseAiMove(seat);
+  if(!move)dgPassTurn(seat);else dgPlayTile(seat,move.tile,move.end);
+}
+function dgSelectTile(i){
+  if(!dgame||dgame.over||dgame.turn!==0)return;
+  let t=dgame.hands[0][i];
+  let opts=dgLegalPlaysForSeat(0).filter(m=>m.tile.a===t.a&&m.tile.b===t.b);
+  if(!opts.length)return;
+  if(dgame.selectedIdx===i){dgame.selectedIdx=undefined;dgRender();return}
+  if(opts.length===1){dgame.selectedIdx=undefined;dgPlayTile(0,t,opts[0].end);return}
+  dgame.selectedIdx=i;dgRender();
+}
+function dgHumanPlayEnd(end){if(!dgame||dgame.selectedIdx===undefined)return;let t=dgame.hands[0][dgame.selectedIdx];dgame.selectedIdx=undefined;dgPlayTile(0,t,end)}
+function dgHumanPass(){if(!dgame||dgame.over||dgame.turn!==0||dgLegalPlaysForSeat(0).length)return;dgPassTurn(0)}
+
+function dgFinishHand(info){
+  dgame.over=true;
+  let pipsOf=seat=>dgame.hands[seat].reduce((s,t)=>s+t.a+t.b,0);
+  let team1Pips=pipsOf(0)+pipsOf(2),team2Pips=pipsOf(1)+pipsOf(3);
+  let winningTeam=null,points=0,capicu=false;
+  if(info.type==="domino"){
+    dgame.lastWinnerSeat=info.seat;
+    winningTeam=(info.seat===0||info.seat===2)?1:2;
+    points=winningTeam===1?team2Pips:team1Pips;
+    let lastLog=dgame.log[dgame.log.length-1];
+    if(lastLog&&lastLog.end!=="lead"&&lastLog.preLeftEnd===lastLog.preRightEnd&&(lastLog.tile.a===lastLog.preLeftEnd||lastLog.tile.b===lastLog.preLeftEnd))capicu=true;
+  }else if(team1Pips!==team2Pips){
+    winningTeam=team1Pips<team2Pips?1:2;
+    points=Math.abs(team1Pips-team2Pips);
+  }
+  dgame.result={winningTeam,points,capicu,type:info.type,team1Pips,team2Pips};
+  if(winningTeam){
+    let premio=0,pi=-1;
+    if(mode()==="on"&&premios.length){pi=nextPremioIndex();if(pi>=0){premio=premios[pi];state.premioUsed[pi]=true}}
+    let bonus=capicu?100:0,total=points+premio+bonus;
+    addScore(winningTeam,total,{reason:info.type==="domino"?"Domino out (played hand)":"Blocked (played hand)",detail:`${points} pips${premio?" + "+premio+" premio":""}${bonus?" + 100 capicú":""}`,premioIdx:pi});
+  }
+  dgRender();
+  dgRenderResult();
+}
+function dgRenderResult(){
+  let r=dgame.result,n1=teamName(1),n2=teamName(2),title,detail;
+  if(r.type==="domino"){
+    title=(r.winningTeam===1?"You dominó!":"They dominó.")+" 🏆";
+    let loserPips=r.winningTeam===1?r.team2Pips:r.team1Pips;
+    detail=`${escapeHtml(r.winningTeam===1?n1:n2)} scores ${r.points}${r.capicu?" (includes a Capicú bonus!)":""} — the other side had ${loserPips} pips left.`;
+  }else if(r.winningTeam){
+    title="Blocked — "+(r.winningTeam===1?n1:n2)+" wins the count";
+    detail=`Board blocked. ${escapeHtml(r.winningTeam===1?n1:n2)} had fewer pips (${Math.min(r.team1Pips,r.team2Pips)} vs ${Math.max(r.team1Pips,r.team2Pips)}) and scores the ${r.points}-point difference.`;
+  }else{
+    title="Blocked — tied";
+    detail=`Both sides had ${r.team1Pips} pips. No points awarded.`;
+  }
+  $("dgResultTitle").textContent=title;
+  $("dgResultDetail").textContent=detail;
+  let seatNames=["You","West","Partner","East"];
+  $("dgHandsReveal").innerHTML=`<div class="small" style="margin-bottom:6px">You &amp; Partner = ${escapeHtml(n1)} • West &amp; East = ${escapeHtml(n2)}</div>`+
+    [0,1,2,3].map(seat=>`<div class="seat-row"><strong>${seatNames[seat]}:</strong> ${dgame.hands[seat].length?dgame.hands[seat].map(t=>t.a+"|"+t.b).join("  "):"(empty)"}</div>`).join("");
+  $("dgResult").classList.add("show");
+}
+function dgRender(){
+  if(!dgame)return;
+  $("dgSeatNorth").innerHTML=dgSeatHtml("Partner",dgame.hands[2].length);
+  $("dgSeatWest").innerHTML=dgSeatHtml("West",dgame.hands[1].length);
+  $("dgSeatEast").innerHTML=dgSeatHtml("East",dgame.hands[3].length);
+  $("dgSeatNorth").classList.toggle("turn",dgame.turn===2&&!dgame.over);
+  $("dgSeatWest").classList.toggle("turn",dgame.turn===1&&!dgame.over);
+  $("dgSeatEast").classList.toggle("turn",dgame.turn===3&&!dgame.over);
+  let turnLabel=$("dgTurnLabel");
+  if(dgame.over){turnLabel.textContent="Hand over";turnLabel.classList.remove("you")}
+  else if(dgame.turn===0){turnLabel.textContent="Your turn — tap a tile";turnLabel.classList.add("you")}
+  else{let names=["You","West","Partner","East"];turnLabel.textContent=names[dgame.turn]+" is thinking…";turnLabel.classList.remove("you")}
+
+  $("dgBoard").innerHTML=dgame.board.length?dgame.board.map(t=>tileHtml(t.left,t.right,false)).join(""):'<div class="small" style="color:#cfe3d5">Empty table — someone leads</div>';
+
+  let hand=dgame.hands[0];
+  let legalPlays=(dgame.turn===0&&!dgame.over)?dgLegalPlaysForSeat(0):[];
+  $("dgHand").innerHTML=hand.map((t,i)=>{
+    let tileLegal=legalPlays.some(m=>m.tile.a===t.a&&m.tile.b===t.b);
+    let cls="domino-tile lg"+(t.a===t.b?" isdouble":"")+(i===dgame.selectedIdx?" selected":"")+(dgame.turn===0&&!dgame.over&&!tileLegal?" disabled":"");
+    return `<div class="${cls}" onclick="dgSelectTile(${i})">${halfHtml(t.a)}${halfHtml(t.b)}</div>`;
+  }).join("");
+
+  $("dgPassBtn").style.display=(dgame.turn===0&&!dgame.over&&legalPlays.length===0)?"inline-block":"none";
+  if(dgame.turn===0&&!dgame.over&&dgame.selectedIdx!==undefined){
+    let t=hand[dgame.selectedIdx],opts=dgLegalPlaysForSeat(0).filter(m=>m.tile.a===t.a&&m.tile.b===t.b).map(m=>m.end);
+    $("dgLeftVal").textContent=dgame.leftEnd;$("dgRightVal").textContent=dgame.rightEnd;
+    $("dgPlayLeftBtn").style.display=opts.includes("left")?"inline-block":"none";
+    $("dgPlayRightBtn").style.display=opts.includes("right")?"inline-block":"none";
+  }else{
+    $("dgPlayLeftBtn").style.display="none";$("dgPlayRightBtn").style.display="none";
+  }
+}
 
 let deferredInstallPrompt=null;
 function isStandalone(){return window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true}
