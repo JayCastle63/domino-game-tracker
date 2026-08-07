@@ -135,7 +135,7 @@
     .dg-back{width:11px;height:16px;background:url('assets/coqui-back.jpg') 50% 46%/280% no-repeat;border:1.5px solid var(--gold);border-radius:3px;box-shadow:0 2px 0 rgba(0,0,0,.35);flex:none}
     .dg-back+.dg-back{margin-left:-6px}
     .dg-mid{flex:1;display:flex;align-items:center;min-height:0}
-    .dg-board{flex:1;overflow:auto;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:3px;padding:6px;max-height:100%}
+    .dg-board{flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:6px;max-height:100%}
     .dg-end-zone{border:3px dashed transparent;border-radius:10px;padding:2px;display:flex;align-items:center}
     .dg-end-zone.legal{border-color:var(--gold);animation:dgPulse 1s ease-in-out infinite}
     @keyframes dgPulse{0%,100%{box-shadow:0 0 0 0 rgba(245,197,66,.5)}50%{box-shadow:0 0 0 6px rgba(245,197,66,0)}}
@@ -743,6 +743,43 @@ function halfHtml(n){let dots=(DG_PIP_POS[n]||[]).map(([r,c])=>`<div class="dt-d
 function tileHtml(a,b,big){return `<div class="domino-tile${big?" lg":""}${a===b?" isdouble":""}">${halfHtml(a)}${halfHtml(b)}</div>`}
 function dgSeatHtml(label,count){let n=Math.min(count,7),fan="";for(let i=0;i<n;i++)fan+=`<span class="dg-back"></span>`;return `<div>${label} • ${count}</div><div class="dg-back-fan">${fan}</div>`}
 
+/* Lays the chain out the way it's actually played on a table: matching pips end to end,
+   doubles turned crosswise, and the line "snaking" back and forth (a run to one side, a short
+   drop, a run back the other way) instead of just spilling off the edge of the screen. */
+function dgBoardLayout(board){
+  const STEP=40,RUN_LEN=6;
+  let x=0,y=0,goingRight=true,runCount=0,mode="horiz",placements=[];
+  for(const t of board){
+    let isDouble=t.left===t.right,horizontal=mode==="horiz";
+    placements.push({tile:t,x,y,horizontal,isDouble});
+    if(mode==="horiz"){
+      x+=goingRight?STEP:-STEP;
+      runCount++;
+      if(runCount>=RUN_LEN){mode="turn";runCount=0}
+    }else{
+      y+=STEP;
+      mode="horiz";
+      goingRight=!goingRight;
+    }
+  }
+  return placements;
+}
+function dgBoardHtml(board){
+  if(!board.length)return '<div class="small" style="color:#cfe3d5">Empty table — someone leads</div>';
+  const TW=38,TH=27,PAD=16;
+  let layout=dgBoardLayout(board);
+  let xs=layout.map(p=>p.x),ys=layout.map(p=>p.y);
+  let minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+  let offX=-minX+TW/2+PAD,offY=-minY+TH/2+PAD;
+  let boardW=(maxX-minX)+TW+PAD*2,boardH=(maxY-minY)+TH+PAD*2;
+  let tiles=layout.map(p=>{
+    let rotate=p.isDouble?(p.horizontal?90:0):(p.horizontal?0:90);
+    let left=p.x+offX-TW/2,top=p.y+offY-TH/2;
+    return `<div style="position:absolute;left:${left}px;top:${top}px;transform:rotate(${rotate}deg)">${tileHtml(p.tile.left,p.tile.right,false)}</div>`;
+  }).join("");
+  return `<div style="position:relative;width:${boardW}px;height:${boardH}px;flex:none">${tiles}</div>`;
+}
+
 function openDominoGame(){
   if(state.selectedRuleSet!=="puertoRican"){alert("Play vs Computer is available for Puerto Rican style right now.");return}
   if(session.active){alert("Leave the shared session first — Play vs Computer is a solo local game.");return}
@@ -894,7 +931,7 @@ function dgRender(){
   else if(dgame.turn===0){turnLabel.textContent="Your turn — tap a tile";turnLabel.classList.add("you")}
   else{let names=["You","West","Partner","East"];turnLabel.textContent=names[dgame.turn]+" is thinking…";turnLabel.classList.remove("you")}
 
-  $("dgBoard").innerHTML=dgame.board.length?dgame.board.map(t=>tileHtml(t.left,t.right,false)).join(""):'<div class="small" style="color:#cfe3d5">Empty table — someone leads</div>';
+  $("dgBoard").innerHTML=dgBoardHtml(dgame.board);
 
   let hand=dgame.hands[0];
   let legalPlays=(dgame.turn===0&&!dgame.over)?dgLegalPlaysForSeat(0):[];
