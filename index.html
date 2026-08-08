@@ -753,18 +753,37 @@ const DG_TILE_LEN=38,DG_TILE_WID=27,DG_TILE_GAP=3;
 function dgBoardLayout(board){
   const HORIZ_RUN=6,VERT_RUN=4;
   let x=0,y=0,goingRight=true,mode="horiz",count=0,placements=[];
-  for(const t of board){
-    let isDouble=t.left===t.right,horizontal=mode==="horiz";
+  for(let i=0;i<board.length;i++){
+    let t=board[i],isDouble=t.left===t.right,horizontal=mode==="horiz";
     placements.push({tile:t,x,y,horizontal,isDouble,goingRight});
-    let step=(isDouble?DG_TILE_WID:DG_TILE_LEN)+DG_TILE_GAP;
+    let along=isDouble?DG_TILE_WID:DG_TILE_LEN;
+    let step=along+DG_TILE_GAP;
     if(mode==="horiz"){
-      x+=goingRight?step:-step;
+      let dir=goingRight?1:-1;
+      x+=dir*step;
       count++;
-      if(count>=HORIZ_RUN){mode="vert";count=0}
+      if(count>=HORIZ_RUN){
+        mode="vert";count=0;
+        // The corner's clearance was sized for THIS tile's own footprint, but it's the NEXT
+        // tile that actually lands there — and a double needs more room crosswise than a
+        // straight tile does. Nudge the corner to fit whichever one is really arriving.
+        if(i+1<board.length){
+          let nextDouble=board[i+1].left===board[i+1].right;
+          let nextCross=nextDouble?DG_TILE_LEN:DG_TILE_WID;
+          x+=dir*(nextCross-along)/2;
+        }
+      }
     }else{
       y+=step;
       count++;
-      if(count>=VERT_RUN){mode="horiz";count=0;goingRight=!goingRight}
+      if(count>=VERT_RUN){
+        mode="horiz";count=0;goingRight=!goingRight;
+        if(i+1<board.length){
+          let nextDouble=board[i+1].left===board[i+1].right;
+          let nextCross=nextDouble?DG_TILE_LEN:DG_TILE_WID;
+          y+=(nextCross-along)/2;
+        }
+      }
     }
   }
   return placements;
