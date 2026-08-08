@@ -183,24 +183,48 @@
     .dg-hands-reveal .seat-row{margin-bottom:6px}
     @media(max-width:380px){.domino-tile .dt-half{width:16px;height:24px}.domino-tile.lg .dt-half{width:25px;height:36px}.domino-tile.lg.vertical .dt-half{width:36px;height:25px}}
 
-    /* ---- Shuffle & deal flourish: a jittering face-down pile, then tiles fly out
-       round-robin to each seat before the real hand renders ---- */
+    /* ---- Shuffle & deal flourish: tiles spread face-down across the table and get mixed
+       with two sweeping "hands", then fly out round-robin to each seat before the real hand
+       renders ---- */
     .dg-shuffle-overlay{position:absolute;inset:0;z-index:5;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,20,10,.4);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
     .dg-shuffle-overlay.show{display:flex}
-    .dg-shuffle-pile{position:relative;width:120px;height:90px}
-    .dg-shuffle-tile,.dg-fly-tile{position:absolute;width:26px;height:37px;margin-left:-13px;margin-top:-18px;background:url('assets/coqui-back.jpg') 50% 46%/280% no-repeat;border:2px solid var(--gold);border-radius:5px;box-shadow:0 3px 8px rgba(0,0,0,.45);pointer-events:none}
-    .dg-shuffle-tile{left:50%;top:50%;animation:dgJitter .55s ease-in-out infinite;transform:rotate(var(--r0,0deg))}
-    @keyframes dgJitter{
+    .dg-shuffle-pile{position:relative;width:min(320px,84vw);height:180px}
+    .dg-shuffle-tile,.dg-fly-tile{position:absolute;width:24px;height:34px;margin-left:-12px;margin-top:-17px;background:url('assets/coqui-back.jpg') 50% 46%/280% no-repeat;border:2px solid var(--gold);border-radius:5px;box-shadow:0 3px 8px rgba(0,0,0,.45);pointer-events:none}
+    .dg-shuffle-tile{animation-name:dgMix;animation-timing-function:ease-in-out;animation-iteration-count:infinite;transform:translate(0,0) rotate(var(--r0,0deg))}
+    @keyframes dgMix{
       0%,100%{transform:translate(0,0) rotate(var(--r0,0deg))}
-      25%{transform:translate(-3px,2px) rotate(calc(var(--r0,0deg) + 7deg))}
-      50%{transform:translate(3px,-2px) rotate(calc(var(--r0,0deg) - 6deg))}
-      75%{transform:translate(-2px,-3px) rotate(calc(var(--r0,0deg) + 5deg))}
+      33%{transform:translate(var(--dx1,8px),var(--dy1,-6px)) rotate(var(--r1,14deg))}
+      66%{transform:translate(var(--dx2,-8px),var(--dy2,6px)) rotate(var(--r2,-12deg))}
     }
     .dg-fly-tile{left:0;top:0;transition:transform .42s cubic-bezier(.2,.8,.2,1),opacity .42s ease}
+    .dg-shuffle-hand{position:absolute;left:50%;top:50%;z-index:2;margin:-1.4rem 0 0 -1.4rem;font-size:2.8rem;line-height:1;opacity:.6;pointer-events:none;filter:drop-shadow(0 5px 8px rgba(0,0,0,.45));animation:dgHandSweepA 3.4s ease-in-out infinite}
+    .dg-shuffle-hand.b{animation-name:dgHandSweepB;animation-delay:.7s;opacity:.55}
+    @keyframes dgHandSweepA{
+      0%{transform:translate(-64px,26px) rotate(-16deg) scaleX(-1)}
+      25%{transform:translate(58px,-32px) rotate(8deg) scaleX(-1)}
+      50%{transform:translate(66px,30px) rotate(18deg) scaleX(-1)}
+      75%{transform:translate(-58px,32px) rotate(-6deg) scaleX(-1)}
+      100%{transform:translate(-64px,26px) rotate(-16deg) scaleX(-1)}
+    }
+    @keyframes dgHandSweepB{
+      0%{transform:translate(60px,-28px) rotate(14deg)}
+      25%{transform:translate(-62px,24px) rotate(-14deg)}
+      50%{transform:translate(-68px,-22px) rotate(-4deg)}
+      75%{transform:translate(62px,-30px) rotate(10deg)}
+      100%{transform:translate(60px,-28px) rotate(14deg)}
+    }
     .dg-shuffle-label{margin-top:14px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);font-weight:900;font-size:.92rem;text-align:center}
     .dg-shuffle-skip{display:block;margin-top:4px;font-weight:700;font-size:.72rem;opacity:.8}
     @keyframes dgHandEnter{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
     .dg-hand .domino-tile.entering{animation:dgHandEnter .32s ease backwards}
+    @keyframes dgSlam{
+      0%{transform:scale(1) translateY(0);box-shadow:0 0 0 rgba(245,197,66,0)}
+      45%{transform:scale(2.1) translateY(-38px);box-shadow:0 0 0 rgba(245,197,66,0)}
+      60%{transform:scale(2.1) translateY(-38px);box-shadow:0 0 26px 12px rgba(245,197,66,.9)}
+      80%{transform:scale(1.12) translateY(3px);box-shadow:0 0 32px 16px rgba(245,197,66,.65)}
+      100%{transform:scale(1) translateY(0);box-shadow:0 0 0 rgba(245,197,66,0)}
+    }
+    .domino-tile.slam{animation:dgSlam .6s cubic-bezier(.25,.9,.3,1.35);position:relative;z-index:20}
   </style>
 </head>
 <body>
@@ -910,16 +934,26 @@ function dgCancelShuffleAnimation(){
   overlay.onclick=null;
   overlay.innerHTML="";
 }
-function dgBuildJitterPile(container,count){
-  container.innerHTML="";
+function dgBuildMixingPile(container,count){
+  container.querySelectorAll(".dg-shuffle-tile").forEach(el=>el.remove());
   for(let i=0;i<count;i++){
     let el=document.createElement("div");
     el.className="dg-shuffle-tile";
-    let r=(Math.random()*50-25).toFixed(1),dx=(Math.random()*22-11).toFixed(1),dy=(Math.random()*16-8).toFixed(1);
-    el.style.setProperty("--r0",r+"deg");
-    el.style.marginLeft=(-13+Number(dx))+"px";
-    el.style.marginTop=(-18+Number(dy))+"px";
-    el.style.animationDelay=(Math.random()*0.5).toFixed(2)+"s";
+    // Scatter each tile face-down across the whole table area, then give it a slow looping
+    // drift (dgMix) so the pile looks like it's continuously being mixed by hand, not just
+    // sitting there jittering in one spot like a stack of cards.
+    let leftPct=(8+Math.random()*84).toFixed(1),topPct=(10+Math.random()*78).toFixed(1);
+    el.style.left=leftPct+"%";
+    el.style.top=topPct+"%";
+    el.style.setProperty("--r0",(Math.random()*70-35).toFixed(1)+"deg");
+    el.style.setProperty("--r1",(Math.random()*70-35).toFixed(1)+"deg");
+    el.style.setProperty("--r2",(Math.random()*70-35).toFixed(1)+"deg");
+    el.style.setProperty("--dx1",(Math.random()*28-14).toFixed(1)+"px");
+    el.style.setProperty("--dy1",(Math.random()*20-10).toFixed(1)+"px");
+    el.style.setProperty("--dx2",(Math.random()*28-14).toFixed(1)+"px");
+    el.style.setProperty("--dy2",(Math.random()*20-10).toFixed(1)+"px");
+    el.style.animationDuration=(1.6+Math.random()*1.6).toFixed(2)+"s";
+    el.style.animationDelay=(-Math.random()*2.5).toFixed(2)+"s";
     container.appendChild(el);
   }
 }
@@ -963,7 +997,7 @@ function dgStartHandWithAnimation(dealFn){
   $("dgTurnLabel").textContent="Shuffling…";
   $("dgTurnLabel").classList.remove("you");
   ["dgSeatNorth","dgSeatWest","dgSeatEast"].forEach(id=>{let el=$(id);el.classList.remove("turn");el.innerHTML=dgSeatHtml(id==="dgSeatNorth"?"Partner":id==="dgSeatWest"?"West":"East",0)});
-  overlay.innerHTML='<div class="dg-shuffle-pile"></div><div class="dg-shuffle-label">Shuffling &amp; dealing&hellip;<span class="dg-shuffle-skip">Tap to skip</span></div>';
+  overlay.innerHTML='<div class="dg-shuffle-pile"><span class="dg-shuffle-hand a">&#x1F91A;</span><span class="dg-shuffle-hand b">&#x1F91A;</span></div><div class="dg-shuffle-label">Mixing up the tiles&hellip;<span class="dg-shuffle-skip">Tap to skip</span></div>';
   overlay.classList.add("show");
   let token={cancelled:false,timers:[]};
   dgShuffleToken=token;
@@ -980,11 +1014,14 @@ function dgStartHandWithAnimation(dealFn){
     dgProceed();
   }
   overlay.onclick=finish;
-  dgBuildJitterPile(overlay.querySelector(".dg-shuffle-pile"),14);
+  dgBuildMixingPile(overlay.querySelector(".dg-shuffle-pile"),22);
+  let mixMs=7000+Math.random()*3000;
   let id=setTimeout(()=>{
     if(token.cancelled)return;
+    let label=overlay.querySelector(".dg-shuffle-label");
+    if(label)label.firstChild.textContent="Dealing…";
     dgAnimateDeal(overlay,token,finish);
-  },900);
+  },mixMs);
   token.timers.push(id);
 }
 
@@ -1043,7 +1080,7 @@ function dgProceed(){
   dgRender();
   if(!dgame.over&&dgame.turn!==0){
     let gen=dgGeneration,seat=dgame.turn;
-    setTimeout(()=>{if(dgame&&dgGeneration===gen)dgAiPlay(seat)},10500+Math.random()*450);
+    setTimeout(()=>{if(dgame&&dgGeneration===gen)dgAiPlay(seat)},5500+Math.random()*450);
   }
 }
 function dgChooseAiMove(seat){
@@ -1077,18 +1114,22 @@ function dgFinishHand(info){
   dgame.over=true;
   let pipsOf=seat=>dgame.hands[seat].reduce((s,t)=>s+t.a+t.b,0);
   let team1Pips=pipsOf(0)+pipsOf(2),team2Pips=pipsOf(1)+pipsOf(3);
-  let winningTeam=null,points=0,capicu=false;
+  let winningTeam=null,points=0,capicu=false,chuchazo=false,lastLog=null;
   if(info.type==="domino"){
     dgame.lastWinnerSeat=info.seat;
     winningTeam=(info.seat===0||info.seat===2)?1:2;
     points=winningTeam===1?team2Pips:team1Pips;
-    let lastLog=dgame.log[dgame.log.length-1];
+    lastLog=dgame.log[dgame.log.length-1];
     if(specialsEnabled()&&lastLog&&lastLog.end!=="lead"&&lastLog.preLeftEnd===lastLog.preRightEnd&&(lastLog.tile.a===lastLog.preLeftEnd||lastLog.tile.b===lastLog.preLeftEnd))capicu=true;
+    // Chuchazo here means going out on your very last tile with a double — a well-known
+    // celebratory finish distinct from Capicú. Cosmetic only: no extra points, since the
+    // exact house-rule scoring for it varies too much to guess at automatically.
+    if(specialsEnabled()&&lastLog&&!capicu&&lastLog.tile.a===lastLog.tile.b)chuchazo=true;
   }else if(team1Pips!==team2Pips){
     winningTeam=team1Pips<team2Pips?1:2;
     points=Math.abs(team1Pips-team2Pips);
   }
-  dgame.result={winningTeam,points,capicu,type:info.type,team1Pips,team2Pips};
+  dgame.result={winningTeam,points,capicu,chuchazo,type:info.type,team1Pips,team2Pips};
   if(winningTeam){
     let premio=0,pi=-1;
     if(mode()==="on"&&premios.length){pi=nextPremioIndex();if(pi>=0){premio=premios[pi];state.premioUsed[pi]=true}}
@@ -1096,6 +1137,20 @@ function dgFinishHand(info){
     addScore(winningTeam,total,{reason:info.type==="domino"?"Domino out (played hand)":"Blocked (played hand)",detail:`${points} pips${premio?" + "+premio+" premio":""}${bonus?" + 100 capicú":""}`,premioIdx:pi});
   }
   dgRender();
+  // Give the winning tile a slam moment before the result card covers the board, but only
+  // for the player's own team winning with a Capicú or Chuchazo — a plain domino-out just
+  // shows the result right away like before.
+  if(winningTeam===1&&(capicu||chuchazo)&&lastLog){
+    let slamIdx=lastLog.end==="left"?0:dgame.board.length-1;
+    let tiles=$("dgBoard").querySelectorAll(".domino-tile");
+    let el=tiles[slamIdx];
+    if(el){
+      el.classList.add("slam");
+      let gen=dgGeneration;
+      setTimeout(()=>{if(dgGeneration===gen&&$("dominoModal").classList.contains("show"))dgRenderResult()},650);
+      return;
+    }
+  }
   dgRenderResult();
 }
 function dgRenderResult(){
@@ -1103,7 +1158,8 @@ function dgRenderResult(){
   if(r.type==="domino"){
     title=(r.winningTeam===1?"You dominó!":"They dominó.")+" 🏆";
     let loserPips=r.winningTeam===1?r.team2Pips:r.team1Pips;
-    detail=`${escapeHtml(r.winningTeam===1?n1:n2)} scores ${r.points}${r.capicu?" (includes a Capicú bonus!)":""} — the other side had ${loserPips} pips left.`;
+    let flourish=r.capicu?" (includes a Capicú bonus!)":r.chuchazo?" (a Chuchazo finish!)":"";
+    detail=`${escapeHtml(r.winningTeam===1?n1:n2)} scores ${r.points}${flourish} — the other side had ${loserPips} pips left.`;
   }else if(r.winningTeam){
     title="Blocked — "+(r.winningTeam===1?n1:n2)+" wins the count";
     detail=`Board blocked. ${escapeHtml(r.winningTeam===1?n1:n2)} had fewer pips (${Math.min(r.team1Pips,r.team2Pips)} vs ${Math.max(r.team1Pips,r.team2Pips)}) and scores the ${r.points}-point difference.`;
