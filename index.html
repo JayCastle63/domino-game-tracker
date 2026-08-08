@@ -755,7 +755,7 @@ function dgBoardLayout(board){
   let x=0,y=0,goingRight=true,mode="horiz",count=0,placements=[];
   for(const t of board){
     let isDouble=t.left===t.right,horizontal=mode==="horiz";
-    placements.push({tile:t,x,y,horizontal,isDouble});
+    placements.push({tile:t,x,y,horizontal,isDouble,goingRight});
     let step=(isDouble?DG_TILE_WID:DG_TILE_LEN)+DG_TILE_GAP;
     if(mode==="horiz"){
       x+=goingRight?step:-step;
@@ -778,9 +778,14 @@ function dgBoardHtml(board){
   let offX=-minX+DG_TILE_LEN/2+PAD,offY=-minY+DG_TILE_LEN/2+PAD;
   let boardW=(maxX-minX)+DG_TILE_LEN+PAD*2,boardH=(maxY-minY)+DG_TILE_LEN+PAD*2;
   let tiles=layout.map(p=>{
+    // Each tile's "left" value always faces the previous tile in the chain and "right" faces
+    // the next one. Rotating 90° for a downward run correctly puts "left" on top — but a
+    // horizontal run walking leftward needs the tile mirrored too, or "left"/"right" land on
+    // the wrong screen side and the touching pips stop matching at the seam.
     let rotate=p.isDouble?(p.horizontal?90:0):(p.horizontal?0:90);
+    let flip=p.horizontal&&!p.isDouble&&!p.goingRight;
     let left=p.x+offX-DG_TILE_LEN/2,top=p.y+offY-DG_TILE_WID/2;
-    return `<div style="position:absolute;left:${left}px;top:${top}px;transform:rotate(${rotate}deg)">${tileHtml(p.tile.left,p.tile.right,false)}</div>`;
+    return `<div style="position:absolute;left:${left}px;top:${top}px;transform:rotate(${rotate}deg)${flip?" scaleX(-1)":""}">${tileHtml(p.tile.left,p.tile.right,false)}</div>`;
   }).join("");
   return `<div style="position:relative;width:${boardW}px;height:${boardH}px;flex:none">${tiles}</div>`;
 }
