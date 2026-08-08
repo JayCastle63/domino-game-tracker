@@ -39,11 +39,22 @@
     window.dispatchEvent(new Event("firebase-ready"));
   </script>
   <style>
-    :root{--red:#d71920;--blue:#0050a4;--dark:#002b5c;--gold:#f5c542;--green:#159957;--danger:#c62828;--muted:#657083;--text:#172033;--card:rgba(255,255,255,.96);--line:#d9e2ef;--disabled:#aab3c2}
-    *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--text);background:radial-gradient(circle at top left,rgba(255,255,255,.9),transparent 30%),linear-gradient(135deg,var(--blue) 0%,var(--dark) 48%,var(--red) 100%);min-height:100vh;padding:calc(18px + env(safe-area-inset-top)) 10px calc(18px + env(safe-area-inset-bottom))}
-    .app{max-width:760px;margin:0 auto 40px}.hero,.card{background:var(--card);border-radius:22px;box-shadow:0 10px 28px rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.75)}.hero{text-align:center;padding:16px;overflow:hidden;position:relative}.hero.compact{padding:10px 12px;border-radius:18px}.hero:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--red) 0 18%,white 18% 36%,var(--red) 36% 54%,white 54% 72%,var(--red) 72%);opacity:.08}.hero>*{position:relative}h1{margin:0;color:var(--dark);font-size:1.45rem}.hero.compact h1{font-size:1.05rem}.flag{font-size:1.45rem;margin-bottom:5px}.hero.compact .flag{font-size:1.05rem;margin-bottom:0}.sub{color:var(--muted);font-size:.9rem;margin-top:6px}.hero.compact .sub{display:none}.card{padding:14px;margin-top:11px}.title{font-size:1.06rem;color:var(--dark);margin:0 0 10px}.small{color:var(--muted);font-size:.82rem;line-height:1.35}label{display:block;font-weight:700;color:var(--dark);font-size:.88rem;margin:0 0 6px}
-    input,select{width:100%;padding:13px;border:2px solid var(--line);border-radius:13px;background:white;font-size:1rem}input:focus,select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,80,164,.15)}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.score-card{position:sticky;top:6px;z-index:10}.scoreboard{display:grid;grid-template-columns:1fr 1fr;gap:10px}.team{text-align:center;background:linear-gradient(180deg,#fff,#eef4ff);border:3px solid var(--blue);border-radius:18px;padding:12px;min-width:0}.team.winning{border-color:var(--gold);box-shadow:0 0 0 4px rgba(245,197,66,.32)}.teamName{font-weight:900;color:var(--dark);word-break:break-word;font-size:.95rem}.score{font-size:2.75rem;font-weight:900;color:var(--red);margin:3px 0}.needed{font-size:.8rem;color:var(--muted)}.progress{height:11px;background:#dce6f5;border-radius:99px;overflow:hidden;margin-top:8px}.bar{height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--red));transition:.2s}
-    button{border:0;border-radius:14px;padding:13px 10px;font-weight:900;font-size:.95rem;color:white;background:var(--blue);box-shadow:0 4px 0 rgba(0,0,0,.18);touch-action:manipulation;cursor:pointer}button:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.18)}button:disabled{background:var(--disabled)!important;color:#eef1f5;box-shadow:none;cursor:not-allowed;transform:none}.red{background:var(--red)}.gold{background:#b8860b}.green{background:var(--green)}.dark{background:var(--dark)}.gray{background:#5f6b7a}.danger{background:var(--danger)}.mini-button{padding:9px 12px;font-size:.82rem;border-radius:12px;background:var(--dark)}.hidden{display:none!important}.setup-header{display:flex;align-items:center;justify-content:space-between;gap:10px}.setup-header .title{margin:0}.pillrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.pill{background:#eef4ff;border:1px solid #cbd8ec;border-radius:999px;padding:7px 10px;font-size:.82rem;font-weight:700;color:var(--dark)}.pill.used{background:#eceff3;color:#697386;text-decoration:line-through}.switch{display:flex;align-items:center;gap:10px;background:#f6f8fb;border:1px solid var(--line);border-radius:14px;padding:10px;margin-top:10px}.switch input{width:auto;transform:scale(1.25)}
+    :root{--red:#d71920;--blue:#0050a4;--dark:#002b5c;--gold:#f5c542;--green:#159957;--danger:#c62828;--muted:#657083;--text:#172033;--card:rgba(255,255,255,.96);--line:#d9e2ef;--disabled:#aab3c2;
+      --glass-fill:rgba(255,255,255,.52);--glass-fill-strong:rgba(255,255,255,.72);--glass-border:rgba(255,255,255,.7);--glass-blur:blur(22px) saturate(180%);--glass-shadow:0 10px 34px rgba(0,20,50,.22),inset 0 1px 0 rgba(255,255,255,.55)}
+    *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Arial,Helvetica,sans-serif;color:var(--text);background:radial-gradient(circle at top left,rgba(255,255,255,.9),transparent 30%),linear-gradient(135deg,var(--blue) 0%,var(--dark) 48%,var(--red) 100%);background-attachment:fixed;min-height:100vh;padding:calc(18px + env(safe-area-inset-top)) 10px calc(112px + env(safe-area-inset-bottom))}
+    .app{max-width:760px;margin:0 auto 40px}
+    .hero,.card{background:var(--glass-fill);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border-radius:24px;box-shadow:var(--glass-shadow);border:1px solid var(--glass-border)}
+    .hero{text-align:center;padding:16px;overflow:hidden;position:relative}.hero.compact{padding:10px 12px;border-radius:20px}.hero:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--red) 0 18%,white 18% 36%,var(--red) 36% 54%,white 54% 72%,var(--red) 72%);opacity:.1}.hero>*{position:relative}h1{margin:0;color:var(--dark);font-size:1.45rem}.hero.compact h1{font-size:1.05rem}.flag{font-size:1.45rem;margin-bottom:5px}.hero.compact .flag{font-size:1.05rem;margin-bottom:0}.sub{color:var(--muted);font-size:.9rem;margin-top:6px}.hero.compact .sub{display:none}
+    .card{padding:14px;margin-top:11px;position:relative;overflow:hidden}.card:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.5),rgba(255,255,255,0) 45%);pointer-events:none}
+    .title{font-size:1.06rem;color:var(--dark);margin:0 0 10px}.small{color:var(--muted);font-size:.82rem;line-height:1.35}label{display:block;font-weight:700;color:var(--dark);font-size:.88rem;margin:0 0 6px}
+    input,select{width:100%;padding:13px;border:1.5px solid rgba(217,226,239,.9);border-radius:14px;background:rgba(255,255,255,.85);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);font-size:1rem}input:focus,select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,80,164,.15)}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.score-card{position:sticky;top:6px;z-index:10}.scoreboard{display:grid;grid-template-columns:1fr 1fr;gap:10px}.team{text-align:center;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(238,244,255,.7));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:3px solid var(--blue);border-radius:18px;padding:12px;min-width:0}.team.winning{border-color:var(--gold);box-shadow:0 0 0 4px rgba(245,197,66,.32)}.teamName{font-weight:900;color:var(--dark);word-break:break-word;font-size:.95rem}.score{font-size:2.75rem;font-weight:900;color:var(--red);margin:3px 0}.needed{font-size:.8rem;color:var(--muted)}.progress{height:11px;background:#dce6f5;border-radius:99px;overflow:hidden;margin-top:8px}.bar{height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--red));transition:.2s}
+    button{border:0;border-radius:16px;padding:13px 10px;font-weight:900;font-size:.95rem;color:white;background:linear-gradient(180deg,rgba(255,255,255,.3),rgba(255,255,255,0) 45%) var(--blue);background-blend-mode:overlay;box-shadow:0 6px 16px rgba(0,20,50,.24),inset 0 1px 0 rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.28);touch-action:manipulation;cursor:pointer}button:active{transform:translateY(2px);box-shadow:0 2px 8px rgba(0,20,50,.24)}button:disabled{background:var(--disabled)!important;color:#eef1f5;box-shadow:none;cursor:not-allowed;transform:none}.red{background-color:var(--red)}.gold{background-color:#b8860b}.green{background-color:var(--green)}.dark{background-color:var(--dark)}.gray{background-color:#5f6b7a}.danger{background-color:var(--danger)}.mini-button{padding:9px 12px;font-size:.82rem;border-radius:12px;background-color:var(--dark)}.hidden{display:none!important}.setup-header{display:flex;align-items:center;justify-content:space-between;gap:10px}.setup-header .title{margin:0}.pillrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.pill{background:rgba(238,244,255,.85);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid #cbd8ec;border-radius:999px;padding:7px 10px;font-size:.82rem;font-weight:700;color:var(--dark)}.pill.used{background:#eceff3;color:#697386;text-decoration:line-through}.switch{display:flex;align-items:center;gap:10px;background:rgba(246,248,251,.75);border:1px solid var(--line);border-radius:14px;padding:10px;margin-top:10px}.switch input{width:auto;transform:scale(1.25)}
+    .tab-panel{display:none}.tab-panel.active{display:block}
+    .tabbar{position:fixed;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:600;display:flex;gap:2px;padding:6px;border-radius:999px;background:rgba(255,255,255,.38);backdrop-filter:blur(26px) saturate(190%);-webkit-backdrop-filter:blur(26px) saturate(190%);border:1px solid rgba(255,255,255,.6);box-shadow:0 14px 34px rgba(0,10,30,.38),inset 0 1px 0 rgba(255,255,255,.6);max-width:calc(100vw - 20px)}
+    .tabbar-btn{background:transparent;box-shadow:none;border:1px solid transparent;border-radius:999px;padding:8px 15px;min-width:60px;display:flex;flex-direction:column;align-items:center;gap:2px;color:rgba(0,30,60,.66);font-size:.66rem;font-weight:800;transition:.18s}
+    .tabbar-btn:active{transform:none;box-shadow:none}
+    .tabbar-btn .tabbar-icon{font-size:1.22rem;line-height:1}
+    .tabbar-btn.active{background:rgba(255,255,255,.92);color:var(--dark);border-color:rgba(255,255,255,.8);box-shadow:0 4px 12px rgba(0,20,50,.2)}
     .region-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}.region-card{border:3px solid var(--line);border-radius:20px;padding:14px 10px;background:linear-gradient(180deg,#fff,#f5f9ff);text-align:center;cursor:pointer;transition:.18s;box-shadow:0 4px 12px rgba(0,0,0,.08);min-height:150px;display:flex;flex-direction:column;justify-content:center;gap:6px}.region-card.active{border-color:var(--gold);box-shadow:0 0 0 4px rgba(245,197,66,.26),0 8px 18px rgba(0,0,0,.12);background:linear-gradient(180deg,#fffdf3,#eef4ff)}.region-card.unsupported{opacity:.74;filter:saturate(.82)}.region-flag{font-size:2.35rem;line-height:1}.region-name{font-weight:900;color:var(--dark);font-size:1rem;line-height:1.1}.region-summary{color:var(--muted);font-size:.76rem;line-height:1.25;min-height:34px}.region-tag{display:inline-block;align-self:center;font-size:.72rem;font-weight:900;padding:6px 10px;border-radius:999px;background:#eef4ff;color:var(--blue);border:1px solid #cbd8ec}.region-tag.coming{background:#fff4d8;color:#8a6500;border-color:#f2d27b}.selected-style-box{margin-top:14px;border-radius:16px;background:#f6f8fb;border:1px solid var(--line);padding:12px}.selected-style-title{font-weight:900;color:var(--dark);font-size:1rem;margin-bottom:4px}
 
     .app.app-hidden{
@@ -69,10 +80,12 @@
       width:min(96vw,780px);
       max-height:calc(100vh - 40px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
       overflow:auto;
-      background:rgba(255,255,255,.97);
+      background:rgba(255,255,255,.72);
+      backdrop-filter:blur(28px) saturate(180%);
+      -webkit-backdrop-filter:blur(28px) saturate(180%);
       border-radius:28px;
-      border:3px solid rgba(255,255,255,.78);
-      box-shadow:0 24px 60px rgba(0,0,0,.42);
+      border:1px solid rgba(255,255,255,.8);
+      box-shadow:0 24px 60px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.6);
       padding:18px;
       animation:modalPop .32s ease;
     }
@@ -113,8 +126,8 @@
       100%{transform:scale(1);opacity:1}
     }
 
-    .winner{display:none;text-align:center;background:linear-gradient(135deg,var(--gold),#fff2b2);border:3px solid #9b6f00;color:#3b2800;font-weight:900;border-radius:18px;padding:15px;margin-top:11px;font-size:1.12rem}.team-choice{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}.team-radio input{display:none}.team-radio span{display:block;text-align:center;padding:14px 10px;border-radius:15px;border:3px solid var(--line);background:#fff;font-weight:900;color:var(--dark);box-shadow:0 3px 0 rgba(0,0,0,.08)}.team-radio input:checked+span{border-color:var(--blue);background:#eef4ff;box-shadow:0 0 0 4px rgba(0,80,164,.15)}
-    .install-banner{display:none;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(135deg,var(--dark),var(--blue));color:#fff;border-radius:16px;padding:11px 14px;margin-top:11px;box-shadow:0 8px 20px rgba(0,0,0,.22)}.install-banner.show{display:flex}.install-banner .txt{font-size:.85rem;line-height:1.3;font-weight:700}.install-banner .txt span{display:block;font-weight:400;opacity:.85;font-size:.78rem;margin-top:2px}.install-banner button{flex:none;padding:9px 14px;font-size:.82rem;background:var(--gold);color:#3b2800}.install-banner .dismiss{background:transparent;box-shadow:none;color:#fff;opacity:.75;padding:9px 8px}
+    .winner{display:none;text-align:center;background:linear-gradient(135deg,rgba(245,197,66,.88),rgba(255,242,178,.88));backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%);border:1px solid rgba(255,255,255,.6);color:#3b2800;font-weight:900;border-radius:18px;padding:15px;margin-top:11px;font-size:1.12rem;box-shadow:0 10px 26px rgba(0,0,0,.2)}.team-choice{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}.team-radio input{display:none}.team-radio span{display:block;text-align:center;padding:14px 10px;border-radius:15px;border:3px solid var(--line);background:#fff;font-weight:900;color:var(--dark);box-shadow:0 3px 0 rgba(0,0,0,.08)}.team-radio input:checked+span{border-color:var(--blue);background:#eef4ff;box-shadow:0 0 0 4px rgba(0,80,164,.15)}
+    .install-banner{display:none;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(135deg,rgba(0,43,92,.82),rgba(0,80,164,.82));backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:16px;padding:11px 14px;margin-top:11px;box-shadow:0 8px 20px rgba(0,0,0,.22)}.install-banner.show{display:flex}.install-banner .txt{font-size:.85rem;line-height:1.3;font-weight:700}.install-banner .txt span{display:block;font-weight:400;opacity:.85;font-size:.78rem;margin-top:2px}.install-banner button{flex:none;padding:9px 14px;font-size:.82rem;background:var(--gold);color:#3b2800}.install-banner .dismiss{background:transparent;box-shadow:none;color:#fff;opacity:.75;padding:9px 8px}
     .history{max-height:270px;overflow:auto;background:white;border:1px solid var(--line);border-radius:14px}.historyItem{padding:10px 12px;border-bottom:1px solid #edf1f7;font-size:.9rem}.historyItem:last-child{border-bottom:0}.cameraWrap{display:grid;gap:10px}video,canvas,img{width:100%;border-radius:16px;background:#111;max-height:420px;object-fit:contain;border:2px solid var(--line)}#snapshot{display:none}#videoStage{position:relative;display:none;border-radius:16px;overflow:hidden;border:2px solid var(--line);background:#111;max-height:420px}#videoStage.show{display:block}#videoStage video{border:0;border-radius:0;margin:0;display:block;max-height:420px}#liveOverlay{position:absolute;inset:0;width:100%;height:100%;max-height:none;pointer-events:none;border:0;border-radius:0;background:transparent}.tapCount{font-size:1.8rem;font-weight:900;color:var(--red);text-align:center}.icon-btn{font-size:1.35rem;padding:12px 8px;min-height:54px;display:flex;align-items:center;justify-content:center}.icon-label{font-size:.7rem;font-weight:800;display:block;margin-top:3px}.info-box{display:none;background:#f6f8fb;border:1px solid var(--line);border-radius:14px;padding:10px;font-size:.82rem;color:var(--muted);line-height:1.35}.footer{text-align:center;color:white;opacity:.9;font-size:.8rem;margin-top:13px}
     .celebration{display:none;position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden;background:radial-gradient(circle at center,rgba(255,255,255,.15),rgba(0,0,0,.45))}.celebration.show{display:block}.flag-fall{position:absolute;top:-12vh;font-size:2rem;animation:fall linear infinite,sway ease-in-out infinite;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35));opacity:.95}.flag-fall:nth-child(1){left:4%;animation-duration:7s,3.2s}.flag-fall:nth-child(2){left:16%;animation-duration:8.5s,4.1s}.flag-fall:nth-child(3){left:28%;animation-duration:7.8s,3.7s}.flag-fall:nth-child(4){left:42%;animation-duration:9s,4.5s}.flag-fall:nth-child(5){left:57%;animation-duration:8.2s,3.6s}.flag-fall:nth-child(6){left:72%;animation-duration:7.2s,3.1s}.flag-fall:nth-child(7){left:88%;animation-duration:8.8s,4.8s}.celebrate-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,560px);background:rgba(255,255,255,.94);border:4px solid var(--gold);border-radius:24px;box-shadow:0 18px 40px rgba(0,0,0,.35);padding:18px;text-align:center;pointer-events:auto}.celebrate-title{font-size:1.6rem;font-weight:900;color:var(--dark);line-height:1.15;margin:0}.celebrate-sub{margin-top:8px;color:var(--muted);font-size:.95rem;font-weight:700}.coqui{font-size:3.8rem;display:inline-block;animation:bounceDance 1.2s ease-in-out infinite}.celebrate-btn{margin-top:14px;background:var(--dark);color:white;border:none;border-radius:14px;padding:12px 16px;font-weight:900;font-size:.95rem;cursor:pointer}
     @keyframes fall{0%{transform:translateY(-15vh) rotate(0deg)}100%{transform:translateY(120vh) rotate(360deg)}}@keyframes sway{0%,100%{margin-left:0}50%{margin-left:18px}}@keyframes bounceDance{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-16px) rotate(10deg)}}
@@ -125,15 +138,15 @@
     .domino-modal.show{display:flex}
     .dg-topbar{display:flex;align-items:center;justify-content:space-between;color:#fff;padding:2px 4px 6px;flex:none}
     .dg-topbar h2{color:#fff;margin:0;font-size:1rem}
-    .dg-close{background:rgba(255,255,255,.18);padding:8px 12px;font-size:.8rem}
+    .dg-close{background:rgba(255,255,255,.2);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);border:1px solid rgba(255,255,255,.3);padding:8px 12px;font-size:.8rem}
     .dg-scoreline{display:flex;align-items:center;justify-content:center;gap:10px;color:#fff;font-weight:800;font-size:.8rem;padding:0 4px 4px;flex:none;flex-wrap:wrap}
-    .dg-scoreline .dg-score-team{background:rgba(255,255,255,.14);border-radius:10px;padding:4px 10px}
+    .dg-scoreline .dg-score-team{background:rgba(255,255,255,.18);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:4px 10px}
     .dg-scoreline .dg-score-team b{color:var(--gold);font-size:.95rem;margin-left:4px}
     .dg-scoreline .dg-hand-count{opacity:.85}
     .dg-turn{text-align:center;color:#dfe9d9;font-weight:900;font-size:.88rem;padding:2px 4px 6px;flex:none;min-height:1.2em}
     .dg-turn.you{color:var(--gold)}
     .dg-oppRow{display:flex;justify-content:center;gap:10px;flex:none;padding:2px}
-    .dg-seat{background:rgba(255,255,255,.14);border-radius:12px;padding:5px 8px;color:#fff;font-size:.74rem;font-weight:800;text-align:center;white-space:nowrap;display:flex;flex-direction:column;align-items:center;gap:3px}
+    .dg-seat{background:rgba(255,255,255,.18);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:5px 8px;color:#fff;font-size:.74rem;font-weight:800;text-align:center;white-space:nowrap;display:flex;flex-direction:column;align-items:center;gap:3px}
     .dg-seat.turn{background:var(--gold);color:#3b2800}
     .dg-back-fan{display:flex}
     .dg-back{width:11px;height:16px;background:url('assets/coqui-back.jpg') 50% 46%/280% no-repeat;border:1.5px solid var(--gold);border-radius:3px;box-shadow:0 2px 0 rgba(0,0,0,.35);flex:none}
@@ -161,10 +174,10 @@
     .dg-actions button{padding:11px 18px;font-size:.85rem}
     .dg-result{position:absolute;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:20px;z-index:2}
     .dg-result.show{display:flex}
-    .dg-result-card{background:#fff;border-radius:20px;padding:20px;max-width:380px;max-height:calc(100vh - 40px);overflow:auto;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+    .dg-result-card{background:rgba(255,255,255,.8);backdrop-filter:blur(26px) saturate(180%);-webkit-backdrop-filter:blur(26px) saturate(180%);border:1px solid rgba(255,255,255,.7);border-radius:20px;padding:20px;max-width:380px;max-height:calc(100vh - 40px);overflow:auto;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.6)}
     .dg-result-title{font-size:1.3rem;font-weight:900;color:var(--dark);margin:0 0 6px}
     .dg-result-detail{color:var(--muted);font-size:.88rem;line-height:1.4;margin-bottom:12px}
-    .dg-hands-reveal{text-align:left;background:#f6f8fb;border-radius:14px;padding:10px;margin-bottom:12px;font-size:.8rem;color:var(--text)}
+    .dg-hands-reveal{text-align:left;background:rgba(246,248,251,.85);border-radius:14px;padding:10px;margin-bottom:12px;font-size:.8rem;color:var(--text)}
     .dg-hands-reveal .seat-row{margin-bottom:6px}
     @media(max-width:380px){.domino-tile .dt-half{width:16px;height:24px}.domino-tile.lg .dt-half{width:25px;height:36px}.domino-tile.lg.vertical .dt-half{width:36px;height:25px}}
   </style>
@@ -207,73 +220,19 @@
     <button class="dismiss" onclick="dismissInstallBanner()">&#10005;</button>
   </div>
 
-  <div class="card hidden" id="regionSelectorCard">
-    <h2 class="title">Choose Your Domino Style</h2><div class="small">Pick the region or game type first — each one loads its own scoring rules, target, and scorekeeping layout.</div>
-    <div class="region-grid" id="regionGrid"></div>
-    <div style="margin-top:12px"><label for="regionSelect">Or choose from a list</label><select id="regionSelect" onchange="selectRuleSet(this.value)"></select></div>
-    <div class="selected-style-box"><div class="selected-style-title" id="selectedStyleTitle">Puerto Rican</div><div id="selectedStyleSummary" class="small"></div></div>
-  </div>
-
-  <div class="card" id="setupCard">
-    <div class="setup-header"><h2 class="title">Game Setup</h2><button class="mini-button hidden" id="hideSetupBtn" onclick="hideSetup()">Hide</button></div>
-    <div id="setupBody">
-      <div class="grid2" id="teamNameRow" style="margin-top:10px"><div><label>Team 1 Name</label><input id="team1Name" value="Team A" oninput="saveAndRender()"></div><div><label>Team 2 Name</label><input id="team2Name" value="Team B" oninput="saveAndRender()"></div></div>
-      <div class="grid2" id="targetPremiosRow" style="margin-top:10px"><div><label>Winning Total</label><select id="targetScore" onchange="saveAndRender()"></select></div><div><label>Premios</label><select id="premiosMode" onchange="premiosModeChanged()"></select></div></div>
-      <div id="specialsRow" style="margin-top:10px"><label>Specials (Chuchazo / Capic&uacute;)</label><select id="specialsMode" onchange="specialsModeChanged()"></select></div>
-      <div class="switch"><input type="checkbox" id="autoSaveToggle" checked onchange="saveAndRender()"><div><strong>Autosave on this phone</strong><div class="small">Keeps score if Safari/Chrome closes.</div></div></div>
-      <div class="grid2" style="margin-top:12px"><button class="green" onclick="startGame()">Start Game</button><button class="gray" onclick="resetCurrentGame()">Reset Current</button></div><button class="region-change-button" onclick="openRegionModal(true)">Change Domino Style</button>
-    </div>
-    <div class="hidden" id="setupCollapsed"><div class="small">Setup hidden. Target: <strong id="miniTarget">500</strong> &bull; Style: <strong id="miniStyle">Puerto Rican</strong></div><button class="mini-button" style="margin-top:10px" onclick="showSetup()">Edit Setup</button><button class="region-change-button" onclick="openRegionModal(true)">Change Domino Style</button></div>
-    <div class="pillrow" id="premioPills"></div>
-  </div>
-
-  <div class="card hidden" id="playComputerCard">
-    <h2 class="title">Play vs. Computer</h2>
-    <div class="small">Play a real hand of Puerto Rican dominoes right now, no setup needed &mdash; you and a computer partner against two computer opponents. The result is scored automatically onto the board above.</div>
-    <button class="green" style="margin-top:10px;width:100%" onclick="openDominoGame()">Deal Me In</button>
-  </div>
-
-  <div class="card" id="sessionCard">
-    <div id="sessionCardSolo">
-      <h2 class="title">Play With Others</h2>
-      <div class="small">Start a shared session so others can watch the score live on their own phone, or join in as players.</div>
-      <div class="grid2" style="margin-top:10px"><button class="green" id="startSessionBtn" onclick="startSession()">Start Shared Session</button><button class="dark" id="joinSessionBtn" onclick="openJoinPrompt()">Join a Session</button></div>
-      <div class="small" id="sessionSetupHint" style="margin-top:8px;display:none">Shared sessions need a one-time setup by the app owner (a free Firebase project). Ask them to finish it, or keep playing solo on this device.</div>
-    </div>
-    <div class="hidden" id="sessionCardActive">
-      <div class="setup-header"><h2 class="title">Shared Session</h2><span class="pill" id="sessionStatusPill">Live</span></div>
-      <div class="small" id="sessionRoleNote" style="text-align:center;margin-top:4px"></div>
-      <div class="hidden" id="adminCodeBox">
-        <div style="text-align:center;margin-top:6px"><div class="small">Player Code &mdash; full access</div><div style="font-size:1.7rem;font-weight:900;letter-spacing:3px;color:var(--dark)" id="sessionCodeDisplay">------</div></div>
-        <div class="grid2" style="margin-top:8px"><button class="gold" onclick="shareSessionLink('admin')">Share Player Invite</button><button class="gray" onclick="copySessionLink('admin')">Copy Player Link</button></div>
-      </div>
-      <div class="hidden" id="viewerCodeBox" style="text-align:center;margin-top:16px">
-        <div class="small">Viewer Code &mdash; watch only</div><div style="font-size:1.3rem;font-weight:900;letter-spacing:2px;color:var(--muted)" id="viewerCodeDisplay">------</div>
-        <div class="grid2" style="margin-top:8px"><button class="gold" onclick="shareSessionLink('viewer')">Share Viewer Invite</button><button class="gray" onclick="copySessionLink('viewer')">Copy Viewer Link</button></div>
-      </div>
-      <div class="small" style="margin-top:14px">Players in this session</div>
-      <div class="pillrow" id="sessionPlayersList"></div>
-      <div class="grid2" style="margin-top:12px"><button class="danger" onclick="leaveSession()">Leave Session</button><button class="danger" id="endSessionBtn" onclick="endSession()">End for Everyone</button></div>
-    </div>
-  </div>
-
+  <div class="winner" id="winnerBox"></div>
   <div class="install-banner" id="viewerBanner" style="background:linear-gradient(135deg,#5f6b7a,#37414d)">
     <div class="txt">Viewing only<span>You're watching this game live. Ask the host for the player code to join in and score hands.</span></div>
   </div>
 
-  <div class="winner" id="winnerBox"></div>
-  <div class="card hidden" id="rosterCard">
-    <h2 class="title">Players</h2>
-    <div class="small">Add everyone at the table. You can add or remove players between games.</div>
-    <div class="pillrow" id="rosterList" style="margin-top:8px"></div>
-    <div class="grid2" style="margin-top:10px"><input id="newPlayerName" placeholder="Player name"><button class="green" onclick="addPlayer()">Add Player</button></div>
-  </div>
+  <div class="tab-panel" data-tab="score" id="tabPanelScore">
+  <div class="card score-card" id="teamScoreboardCard"><div class="scoreboard"><div class="team" id="team1Box"><div class="teamName" id="team1Display">Team A</div><div class="score" id="team1Score">0</div><div class="needed" id="team1Needed">Needs 500</div><div class="progress"><div class="bar" id="team1Bar"></div></div></div><div class="team" id="team2Box"><div class="teamName" id="team2Display">Team B</div><div class="score" id="team2Score">0</div><div class="needed" id="team2Needed">Needs 500</div><div class="progress"><div class="bar" id="team2Bar"></div></div></div></div></div>
+
   <div class="card hidden" id="leaderboardCard">
     <h2 class="title">Leaderboard</h2>
     <div class="small">Lowest total leads. First to run out of doubles wins.</div>
     <div class="history" id="leaderboardList" style="margin-top:8px"></div>
   </div>
-  <div class="card score-card" id="teamScoreboardCard"><div class="scoreboard"><div class="team" id="team1Box"><div class="teamName" id="team1Display">Team A</div><div class="score" id="team1Score">0</div><div class="needed" id="team1Needed">Needs 500</div><div class="progress"><div class="bar" id="team1Bar"></div></div></div><div class="team" id="team2Box"><div class="teamName" id="team2Display">Team B</div><div class="score" id="team2Score">0</div><div class="needed" id="team2Needed">Needs 500</div><div class="progress"><div class="bar" id="team2Bar"></div></div></div></div></div>
 
   <div class="card hidden" id="quickScoreCard">
     <h2 class="title">Call Your Score</h2>
@@ -283,16 +242,6 @@
       <div><label id="quickScoreTeam2Label">Team 2</label><div class="pillrow" id="quickButtons2"></div><div class="grid2" style="margin-top:8px"><input id="customScore2" type="number" inputmode="numeric" placeholder="Other"><button class="gold" onclick="callCustomScore(2)">Add</button></div></div>
     </div>
   </div>
-
-  <div class="card" id="scoreHandCard"><h2 class="title" id="scoreHandTitle">Score a Hand</h2><div class="small" id="scoreHandDesc">Select who won the hand, enter the dots left in the losing team&rsquo;s hands, and the next premio applies automatically when premios are on.</div>
-    <div style="margin-top:10px"><label>Who gets the points?</label><div class="team-choice"><label class="team-radio"><input type="radio" name="handWinnerRadio" value="1" checked><span id="radioTeam1">Team 1</span></label><label class="team-radio"><input type="radio" name="handWinnerRadio" value="2"><span id="radioTeam2">Team 2</span></label></div></div>
-    <div style="margin-top:10px"><label id="handPointsLabel">Domino Points</label><input id="handPoints" type="number" min="0" inputmode="numeric" placeholder="Dots left, ex: 37"></div>
-    <div class="grid2" style="margin-top:10px"><div><label>Bonus / Ending</label><select id="bonusType" onchange="bonusChanged()"></select></div><div><label>Bonus Points</label><input id="bonusPoints" type="number" value="0" inputmode="numeric"></div></div>
-    <div style="margin-top:10px"><label>Note</label><input id="handNote" placeholder="Optional note"></div>
-    <div class="grid2" style="margin-top:12px"><button class="green" onclick="scoreHand()">Add Hand Score</button><button class="gray" onclick="clearHandForm()">Clear Hand</button></div>
-  </div>
-
-  <div class="card" id="manualAdjustCard"><h2 class="title">Manual Adjustment</h2><div class="grid2"><div><label>Points</label><input id="manualPoints" type="number" inputmode="numeric" placeholder="Example: 10"></div><div><label>Reason</label><select id="manualReason"><option>Manual adjustment</option><option>Chuchazo</option><option>Capic&uacute;</option><option>Dominao</option><option>Trancado / Tranque</option><option>Penalty</option><option>Correction</option></select></div></div><div class="grid2" style="margin-top:12px"><button id="addManual1" class="gold" onclick="manualAdjust(1,1)">Add Team 1</button><button id="addManual2" class="gold" onclick="manualAdjust(2,1)">Add Team 2</button><button id="subManual1" class="gray" onclick="manualAdjust(1,-1)">Subtract Team 1</button><button id="subManual2" class="gray" onclick="manualAdjust(2,-1)">Subtract Team 2</button></div></div>
 
   <div class="card hidden" id="roundEntryCard">
     <h2 class="title">Add Round</h2>
@@ -331,11 +280,92 @@
     </div>
   </div>
 
-  <div class="card" id="gameControlsCard"><h2 class="title">Game Controls</h2><div class="grid2"><button class="dark" onclick="undoLast()">Undo Last</button><button class="green" onclick="startNewGame()">Start New Game</button><button class="gray" onclick="saveGame()">Save Game</button><button class="danger" onclick="clearTracker()">Clear Tracker</button></div></div>
+  <div class="card" id="scoreHandCard"><h2 class="title" id="scoreHandTitle">Score a Hand</h2><div class="small" id="scoreHandDesc">Select who won the hand, enter the dots left in the losing team&rsquo;s hands, and the next premio applies automatically when premios are on.</div>
+    <div style="margin-top:10px"><label>Who gets the points?</label><div class="team-choice"><label class="team-radio"><input type="radio" name="handWinnerRadio" value="1" checked><span id="radioTeam1">Team 1</span></label><label class="team-radio"><input type="radio" name="handWinnerRadio" value="2"><span id="radioTeam2">Team 2</span></label></div></div>
+    <div style="margin-top:10px"><label id="handPointsLabel">Domino Points</label><input id="handPoints" type="number" min="0" inputmode="numeric" placeholder="Dots left, ex: 37"></div>
+    <div class="grid2" style="margin-top:10px"><div><label>Bonus / Ending</label><select id="bonusType" onchange="bonusChanged()"></select></div><div><label>Bonus Points</label><input id="bonusPoints" type="number" value="0" inputmode="numeric"></div></div>
+    <div style="margin-top:10px"><label>Note</label><input id="handNote" placeholder="Optional note"></div>
+    <div class="grid2" style="margin-top:12px"><button class="green" onclick="scoreHand()">Add Hand Score</button><button class="gray" onclick="clearHandForm()">Clear Hand</button></div>
+  </div>
+
+  <div class="card" id="manualAdjustCard"><h2 class="title">Manual Adjustment</h2><div class="grid2"><div><label>Points</label><input id="manualPoints" type="number" inputmode="numeric" placeholder="Example: 10"></div><div><label>Reason</label><select id="manualReason"><option>Manual adjustment</option><option>Chuchazo</option><option>Capic&uacute;</option><option>Dominao</option><option>Trancado / Tranque</option><option>Penalty</option><option>Correction</option></select></div></div><div class="grid2" style="margin-top:12px"><button id="addManual1" class="gold" onclick="manualAdjust(1,1)">Add Team 1</button><button id="addManual2" class="gold" onclick="manualAdjust(2,1)">Add Team 2</button><button id="subManual1" class="gray" onclick="manualAdjust(1,-1)">Subtract Team 1</button><button id="subManual2" class="gray" onclick="manualAdjust(2,-1)">Subtract Team 2</button></div></div>
+  </div>
+
+  <div class="tab-panel" data-tab="play" id="tabPanelPlay">
+  <div class="card hidden" id="playComputerCard">
+    <h2 class="title">Play vs. Computer</h2>
+    <div class="small">Play a real hand of Puerto Rican dominoes right now, no setup needed &mdash; you and a computer partner against two computer opponents. The result is scored automatically onto the board above.</div>
+    <button class="green" style="margin-top:10px;width:100%" onclick="openDominoGame()">Deal Me In</button>
+  </div>
+
+  <div class="card" id="sessionCard">
+    <div id="sessionCardSolo">
+      <h2 class="title">Play With Others</h2>
+      <div class="small">Start a shared session so others can watch the score live on their own phone, or join in as players.</div>
+      <div class="grid2" style="margin-top:10px"><button class="green" id="startSessionBtn" onclick="startSession()">Start Shared Session</button><button class="dark" id="joinSessionBtn" onclick="openJoinPrompt()">Join a Session</button></div>
+      <div class="small" id="sessionSetupHint" style="margin-top:8px;display:none">Shared sessions need a one-time setup by the app owner (a free Firebase project). Ask them to finish it, or keep playing solo on this device.</div>
+    </div>
+    <div class="hidden" id="sessionCardActive">
+      <div class="setup-header"><h2 class="title">Shared Session</h2><span class="pill" id="sessionStatusPill">Live</span></div>
+      <div class="small" id="sessionRoleNote" style="text-align:center;margin-top:4px"></div>
+      <div class="hidden" id="adminCodeBox">
+        <div style="text-align:center;margin-top:6px"><div class="small">Player Code &mdash; full access</div><div style="font-size:1.7rem;font-weight:900;letter-spacing:3px;color:var(--dark)" id="sessionCodeDisplay">------</div></div>
+        <div class="grid2" style="margin-top:8px"><button class="gold" onclick="shareSessionLink('admin')">Share Player Invite</button><button class="gray" onclick="copySessionLink('admin')">Copy Player Link</button></div>
+      </div>
+      <div class="hidden" id="viewerCodeBox" style="text-align:center;margin-top:16px">
+        <div class="small">Viewer Code &mdash; watch only</div><div style="font-size:1.3rem;font-weight:900;letter-spacing:2px;color:var(--muted)" id="viewerCodeDisplay">------</div>
+        <div class="grid2" style="margin-top:8px"><button class="gold" onclick="shareSessionLink('viewer')">Share Viewer Invite</button><button class="gray" onclick="copySessionLink('viewer')">Copy Viewer Link</button></div>
+      </div>
+      <div class="small" style="margin-top:14px">Players in this session</div>
+      <div class="pillrow" id="sessionPlayersList"></div>
+      <div class="grid2" style="margin-top:12px"><button class="danger" onclick="leaveSession()">Leave Session</button><button class="danger" id="endSessionBtn" onclick="endSession()">End for Everyone</button></div>
+    </div>
+  </div>
+  </div>
+
+  <div class="tab-panel" data-tab="history" id="tabPanelHistory">
   <div class="card"><h2 class="title">Game Tracker</h2><div class="history" id="gameTrackerList"></div></div>
   <div class="card" id="scoreHistoryCard"><h2 class="title">Score History</h2><div class="history" id="historyList"></div></div>
   <div class="card hidden" id="roundHistoryCard"><h2 class="title">Round History</h2><div class="history" id="roundHistoryList"></div></div>
+  </div>
 
+  <div class="tab-panel" data-tab="setup" id="tabPanelSetup">
+  <div class="card hidden" id="regionSelectorCard">
+    <h2 class="title">Choose Your Domino Style</h2><div class="small">Pick the region or game type first — each one loads its own scoring rules, target, and scorekeeping layout.</div>
+    <div class="region-grid" id="regionGrid"></div>
+    <div style="margin-top:12px"><label for="regionSelect">Or choose from a list</label><select id="regionSelect" onchange="selectRuleSet(this.value)"></select></div>
+    <div class="selected-style-box"><div class="selected-style-title" id="selectedStyleTitle">Puerto Rican</div><div id="selectedStyleSummary" class="small"></div></div>
+  </div>
+
+  <div class="card" id="setupCard">
+    <div class="setup-header"><h2 class="title">Game Setup</h2><button class="mini-button hidden" id="hideSetupBtn" onclick="hideSetup()">Hide</button></div>
+    <div id="setupBody">
+      <div class="grid2" id="teamNameRow" style="margin-top:10px"><div><label>Team 1 Name</label><input id="team1Name" value="Team A" oninput="saveAndRender()"></div><div><label>Team 2 Name</label><input id="team2Name" value="Team B" oninput="saveAndRender()"></div></div>
+      <div class="grid2" id="targetPremiosRow" style="margin-top:10px"><div><label>Winning Total</label><select id="targetScore" onchange="saveAndRender()"></select></div><div><label>Premios</label><select id="premiosMode" onchange="premiosModeChanged()"></select></div></div>
+      <div id="specialsRow" style="margin-top:10px"><label>Specials (Chuchazo / Capic&uacute;)</label><select id="specialsMode" onchange="specialsModeChanged()"></select></div>
+      <div class="switch"><input type="checkbox" id="autoSaveToggle" checked onchange="saveAndRender()"><div><strong>Autosave on this phone</strong><div class="small">Keeps score if Safari/Chrome closes.</div></div></div>
+      <div class="grid2" style="margin-top:12px"><button class="green" onclick="startGame()">Start Game</button><button class="gray" onclick="resetCurrentGame()">Reset Current</button></div><button class="region-change-button" onclick="openRegionModal(true)">Change Domino Style</button>
+    </div>
+    <div class="hidden" id="setupCollapsed"><div class="small">Setup hidden. Target: <strong id="miniTarget">500</strong> &bull; Style: <strong id="miniStyle">Puerto Rican</strong></div><button class="mini-button" style="margin-top:10px" onclick="showSetup()">Edit Setup</button><button class="region-change-button" onclick="openRegionModal(true)">Change Domino Style</button></div>
+    <div class="pillrow" id="premioPills"></div>
+  </div>
+
+  <div class="card hidden" id="rosterCard">
+    <h2 class="title">Players</h2>
+    <div class="small">Add everyone at the table. You can add or remove players between games.</div>
+    <div class="pillrow" id="rosterList" style="margin-top:8px"></div>
+    <div class="grid2" style="margin-top:10px"><input id="newPlayerName" placeholder="Player name"><button class="green" onclick="addPlayer()">Add Player</button></div>
+  </div>
+
+  <div class="card" id="gameControlsCard"><h2 class="title">Game Controls</h2><div class="grid2"><button class="dark" onclick="undoLast()">Undo Last</button><button class="green" onclick="startNewGame()">Start New Game</button><button class="gray" onclick="saveGame()">Save Game</button><button class="danger" onclick="clearTracker()">Clear Tracker</button></div></div>
+  </div>
+
+  <div class="tabbar" id="tabbar">
+    <button class="tabbar-btn active" data-tab="score" onclick="setActiveTab('score')"><span class="tabbar-icon">&#x1F3C6;</span>Score</button>
+    <button class="tabbar-btn" data-tab="play" onclick="setActiveTab('play')"><span class="tabbar-icon">&#x1F3B2;</span>Play</button>
+    <button class="tabbar-btn" data-tab="history" onclick="setActiveTab('history')"><span class="tabbar-icon">&#x1F4DC;</span>History</button>
+    <button class="tabbar-btn" data-tab="setup" onclick="setActiveTab('setup')"><span class="tabbar-icon">&#x2699;&#xFE0F;</span>Setup</button>
+  </div>
   <div class="celebration" id="celebrationOverlay"><div><div class="flag-fall">&#x1F1F5;&#x1F1F7;</div><div class="flag-fall">&#x1F1F5;&#x1F1F7;</div><div class="flag-fall">&#x1F1F5;&#x1F1F7;</div><div class="flag-fall">&#x1F1F5;&#x1F1F7;</div><div class="flag-fall">&#x1F1F5;&#x1F1F7;</div><div class="flag-fall">&#x1F1F5;&#x1F1F7;</div><div class="flag-fall">&#x1F1F5;&#x1F1F7;</div></div><div class="celebrate-center"><div style="font-size:1.5rem;letter-spacing:6px">&#x1F1F5;&#x1F1F7; &#x1F1F5;&#x1F1F7; &#x1F1F5;&#x1F1F7;</div><h2 class="celebrate-title" id="celebrateWinnerName">Winner!</h2><div class="celebrate-sub">&iexcl;Ganaron! Domino champions</div><div><span class="coqui">&#x1F438;</span><span class="coqui">&#x1F438;</span><span class="coqui">&#x1F438;</span></div><button class="celebrate-btn" onclick="hideCelebration()">Close</button></div></div>
   <div class="footer">Hecho para la mesa, la familia y el domin&oacute; &#x1F1F5;&#x1F1F7;</div>
 </div>
@@ -418,7 +448,9 @@ function renderBonusOptions(){let r=activeRule(),bt=$("bonusType"),sm=$("special
 function specialsEnabled(){let sm=$("specialsMode");return !sm||sm.disabled||sm.value!=="off"}
 function specialsModeChanged(){renderBonusOptions();saveAndRender()}
 function premiosModeChanged(){let r=activeRule(),ts=$("targetScore");if($("premiosMode").value==="off"){if(r.targetOptions.includes(200))ts.value="200"}else{ts.value=String(r.defaultTarget)}saveAndRender()}
-function applySetupVisibility(){let collapsed=state.gameStarted&&!state.setupOpen;$("setupBody").classList.toggle("hidden",collapsed);$("setupCollapsed").classList.toggle("hidden",!collapsed);$("hideSetupBtn").classList.toggle("hidden",collapsed||!state.gameStarted);$("hero").classList.toggle("compact",collapsed)}function startGame(){if(blockedForViewer())return;state.gameStarted=true;state.setupOpen=false;applySetupVisibility();if(session.active)pushSessionSettings({gameStarted:true});saveAndRender();window.scrollTo({top:0,behavior:"smooth"})}function hideSetup(){state.gameStarted=true;state.setupOpen=false;applySetupVisibility();saveAndRender()}function showSetup(){state.setupOpen=true;applySetupVisibility();saveAndRender()}
+function applySetupVisibility(){let collapsed=state.gameStarted&&!state.setupOpen;$("setupBody").classList.toggle("hidden",collapsed);$("setupCollapsed").classList.toggle("hidden",!collapsed);$("hideSetupBtn").classList.toggle("hidden",collapsed||!state.gameStarted);$("hero").classList.toggle("compact",collapsed)}function startGame(){if(blockedForViewer())return;state.gameStarted=true;state.setupOpen=false;applySetupVisibility();if(session.active)pushSessionSettings({gameStarted:true});saveAndRender();setActiveTab("score")}function hideSetup(){state.gameStarted=true;state.setupOpen=false;applySetupVisibility();saveAndRender()}function showSetup(){state.setupOpen=true;applySetupVisibility();saveAndRender()}
+let activeTab="score";
+function setActiveTab(tab){activeTab=tab;document.querySelectorAll(".tab-panel").forEach(p=>p.classList.toggle("active",p.dataset.tab===tab));document.querySelectorAll(".tabbar-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));try{localStorage.setItem("prDominoActiveTabV1",tab)}catch(e){}window.scrollTo({top:0,behavior:"smooth"})}
 function roundToNearest(n,unit){return Math.round(n/unit)*unit}
 function bonusChanged(){let s=$("bonusType"),o=s.options[s.selectedIndex];if(o&&s.value!=="custom")$("bonusPoints").value=o.dataset.points||0}
 function scoreHand(){let team=selectedWinner(),r=activeRule(),isMultiple=r.category==="multiple",domRaw=Number($("handPoints").value)||0,dom=isMultiple?roundToNearest(domRaw,5):domRaw,bonus=Number($("bonusPoints").value)||0,label=$("bonusType").options[$("bonusType").selectedIndex].text.replace(" +0","").replace(" +100",""),note=$("handNote").value.trim(),premio=0,pi=-1;if(mode()==="on"&&premios.length){pi=nextPremioIndex();if(pi>=0){premio=premios[pi];state.premioUsed[pi]=true}}let total=dom+bonus+premio;if(total===0&&!confirm("This hand is adding 0 points. Continue?"))return;addScore(team,total,{reason:isMultiple?"Domino out":"Hand score",detail:`${dom}${isMultiple?" pips (rounded)":" domino points"}${premio?" + "+premio+" premio":""}${bonus?" + "+bonus+" "+label:""}${note?" • "+note:""}`,premioIdx:pi});clearHandForm()}function clearHandForm(){$("handPoints").value="";$("bonusType").value="none";$("bonusPoints").value="0";$("handNote").value="";resetTally()}
@@ -716,7 +748,9 @@ function renderSessionCard(){
 }
 function applyRoleVisibility(){
   let isViewer=session.active&&session.role==="viewer";
-  ["setupCard","scoreHandCard","manualAdjustCard","quickScoreCard","rosterCard","roundEntryCard","cameraCard","gameControlsCard"].forEach(id=>{let el=$(id);if(el)el.classList.toggle("hidden",isViewer)});
+  let cat=activeRule().category||"team",isIndividual=cat==="individual",isMultiple=cat==="multiple";
+  let catHidden={setupCard:false,scoreHandCard:isIndividual,manualAdjustCard:isIndividual,quickScoreCard:!isMultiple,rosterCard:!isIndividual,roundEntryCard:!isIndividual,cameraCard:false,gameControlsCard:false};
+  Object.keys(catHidden).forEach(id=>{let el=$(id);if(el)el.classList.toggle("hidden",isViewer||catHidden[id])});
   let vb=$("viewerBanner");if(vb)vb.classList.toggle("show",isViewer);
 }
 
@@ -1013,6 +1047,7 @@ window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredIns
 window.addEventListener("appinstalled",()=>{$("installBanner").classList.remove("show")});
 
 loadAutoSave();bonusChanged();render();bootRegionGate();showIosInstallHintIfNeeded();
+setActiveTab((function(){try{return localStorage.getItem("prDominoActiveTabV1")||"score"}catch(e){return "score"}})());
 tryRestoreSession();checkJoinLinkOnBoot();whenFirebaseReady(()=>{watchConnectionState();renderSessionCard()});
 if("serviceWorker"in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(e=>console.log(e)))}
 </script>
