@@ -182,6 +182,25 @@
     .dg-hands-reveal{text-align:left;background:rgba(246,248,251,.85);border-radius:14px;padding:10px;margin-bottom:12px;font-size:.8rem;color:var(--text)}
     .dg-hands-reveal .seat-row{margin-bottom:6px}
     @media(max-width:380px){.domino-tile .dt-half{width:16px;height:24px}.domino-tile.lg .dt-half{width:25px;height:36px}.domino-tile.lg.vertical .dt-half{width:36px;height:25px}}
+
+    /* ---- Shuffle & deal flourish: a jittering face-down pile, then tiles fly out
+       round-robin to each seat before the real hand renders ---- */
+    .dg-shuffle-overlay{position:absolute;inset:0;z-index:5;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,20,10,.4);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+    .dg-shuffle-overlay.show{display:flex}
+    .dg-shuffle-pile{position:relative;width:120px;height:90px}
+    .dg-shuffle-tile,.dg-fly-tile{position:absolute;width:26px;height:37px;margin-left:-13px;margin-top:-18px;background:url('assets/coqui-back.jpg') 50% 46%/280% no-repeat;border:2px solid var(--gold);border-radius:5px;box-shadow:0 3px 8px rgba(0,0,0,.45);pointer-events:none}
+    .dg-shuffle-tile{left:50%;top:50%;animation:dgJitter .55s ease-in-out infinite;transform:rotate(var(--r0,0deg))}
+    @keyframes dgJitter{
+      0%,100%{transform:translate(0,0) rotate(var(--r0,0deg))}
+      25%{transform:translate(-3px,2px) rotate(calc(var(--r0,0deg) + 7deg))}
+      50%{transform:translate(3px,-2px) rotate(calc(var(--r0,0deg) - 6deg))}
+      75%{transform:translate(-2px,-3px) rotate(calc(var(--r0,0deg) + 5deg))}
+    }
+    .dg-fly-tile{left:0;top:0;transition:transform .42s cubic-bezier(.2,.8,.2,1),opacity .42s ease}
+    .dg-shuffle-label{margin-top:14px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);font-weight:900;font-size:.92rem;text-align:center}
+    .dg-shuffle-skip{display:block;margin-top:4px;font-weight:700;font-size:.72rem;opacity:.8}
+    @keyframes dgHandEnter{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+    .dg-hand .domino-tile.entering{animation:dgHandEnter .32s ease backwards}
   </style>
 </head>
 <body>
@@ -398,6 +417,7 @@
       <div class="grid2"><button class="green" onclick="dgNextHand()">Next Hand</button><button class="gray" onclick="closeDominoGame()">Leave Table</button></div>
     </div>
   </div>
+  <div class="dg-shuffle-overlay" id="dgShuffleOverlay"></div>
 </div>
 
 <script>
@@ -872,10 +892,101 @@ function openDominoGame(){
   if(session.active){alert("Leave the shared session first — Play vs Computer is a solo local game.");return}
   $("dominoModal").classList.add("show");
   $("dgResult").classList.remove("show");
-  dgDealFirstHand();
-  dgProceed();
+  dgStartHandWithAnimation(dgDealFirstHand);
 }
-function closeDominoGame(){$("dominoModal").classList.remove("show");dgame=null;dgGeneration++}
+function closeDominoGame(){$("dominoModal").classList.remove("show");dgame=null;dgGeneration++;dgCancelShuffleAnimation()}
+
+/* ---- Shuffle & deal flourish: a jittering face-down pile, then tiles fly out round-robin
+   to each seat (7 apiece) before the real hand renders — purely cosmetic, the actual deal
+   (dealFn) only runs once the animation finishes or the player taps to skip it. Guards on
+   the modal still being open (not dgGeneration) since dealFn itself bumps the generation as
+   part of legitimately starting the new hand. ---- */
+let dgShuffleToken=null;
+function dgCancelShuffleAnimation(){
+  if(dgShuffleToken){dgShuffleToken.cancelled=true;dgShuffleToken.timers.forEach(id=>clearTimeout(id))}
+  dgShuffleToken=null;
+  let overlay=$("dgShuffleOverlay");
+  overlay.classList.remove("show");
+  overlay.onclick=null;
+  overlay.innerHTML="";
+}
+function dgBuildJitterPile(container,count){
+  container.innerHTML="";
+  for(let i=0;i<count;i++){
+    let el=document.createElement("div");
+    el.className="dg-shuffle-tile";
+    let r=(Math.random()*50-25).toFixed(1),dx=(Math.random()*22-11).toFixed(1),dy=(Math.random()*16-8).toFixed(1);
+    el.style.setProperty("--r0",r+"deg");
+    el.style.marginLeft=(-13+Number(dx))+"px";
+    el.style.marginTop=(-18+Number(dy))+"px";
+    el.style.animationDelay=(Math.random()*0.5).toFixed(2)+"s";
+    container.appendChild(el);
+  }
+}
+function dgAnimateDeal(overlay,token,onDone){
+  let pile=overlay.querySelector(".dg-shuffle-pile");
+  if(pile)pile.style.opacity="0";
+  let overlayRect=overlay.getBoundingClientRect();
+  let pileRect=(pile||overlay).getBoundingClientRect();
+  let originX=pileRect.left+pileRect.width/2-overlayRect.left,originY=pileRect.top+pileRect.height/2-overlayRect.top;
+  let targets=["dgSeatWest","dgSeatNorth","dgSeatEast","dgHand"].map(id=>{
+    let r=$(id).getBoundingClientRect();
+    return {x:r.left+r.width/2-overlayRect.left,y:r.top+r.height/2-overlayRect.top};
+  });
+  let total=28,landed=0;
+  for(let i=0;i<total;i++){
+    let seatIdx=i%4;
+    let id=setTimeout(()=>{
+      if(token.cancelled)return;
+      let tile=document.createElement("div");
+      tile.className="dg-fly-tile";
+      tile.style.transform=`translate(${originX}px,${originY}px) rotate(${(Math.random()*30-15).toFixed(1)}deg)`;
+      overlay.appendChild(tile);
+      requestAnimationFrame(()=>{
+        if(token.cancelled)return;
+        tile.style.transform=`translate(${targets[seatIdx].x}px,${targets[seatIdx].y}px) rotate(${(Math.random()*40-20).toFixed(1)}deg) scale(.5)`;
+        tile.style.opacity="0";
+      });
+      let cleanupId=setTimeout(()=>tile.remove(),500);
+      token.timers.push(cleanupId);
+      landed++;
+      if(landed===total){let doneId=setTimeout(()=>{if(!token.cancelled)onDone()},480);token.timers.push(doneId)}
+    },i*55);
+    token.timers.push(id);
+  }
+}
+function dgStartHandWithAnimation(dealFn){
+  dgCancelShuffleAnimation();
+  let overlay=$("dgShuffleOverlay");
+  $("dgBoard").innerHTML="";
+  $("dgHand").innerHTML="";
+  $("dgTurnLabel").textContent="Shuffling…";
+  $("dgTurnLabel").classList.remove("you");
+  ["dgSeatNorth","dgSeatWest","dgSeatEast"].forEach(id=>{let el=$(id);el.classList.remove("turn");el.innerHTML=dgSeatHtml(id==="dgSeatNorth"?"Partner":id==="dgSeatWest"?"West":"East",0)});
+  overlay.innerHTML='<div class="dg-shuffle-pile"></div><div class="dg-shuffle-label">Shuffling &amp; dealing&hellip;<span class="dg-shuffle-skip">Tap to skip</span></div>';
+  overlay.classList.add("show");
+  let token={cancelled:false,timers:[]};
+  dgShuffleToken=token;
+  function finish(){
+    if(token.cancelled)return;
+    token.cancelled=true;
+    token.timers.forEach(id=>clearTimeout(id));
+    overlay.classList.remove("show");
+    overlay.onclick=null;
+    overlay.innerHTML="";
+    if(dgShuffleToken===token)dgShuffleToken=null;
+    if(!$("dominoModal").classList.contains("show"))return;
+    dealFn();
+    dgProceed();
+  }
+  overlay.onclick=finish;
+  dgBuildJitterPile(overlay.querySelector(".dg-shuffle-pile"),14);
+  let id=setTimeout(()=>{
+    if(token.cancelled)return;
+    dgAnimateDeal(overlay,token,finish);
+  },900);
+  token.timers.push(id);
+}
 
 function dgDealFirstHand(){
   let set=shuffleArr(buildDominoSet()),hands=[[],[],[],[]];
@@ -884,7 +995,7 @@ function dgDealFirstHand(){
   let starter=hands.findIndex(h=>h.some(t=>t.a===6&&t.b===6));
   dgGeneration++;
   dgHandCount=1;
-  dgame={hands,board:[],leftEnd:null,rightEnd:null,turn:starter,starter,passesInRow:0,over:false,log:[],result:null,selectedIdx:undefined,forceDoubleSixLead:true};
+  dgame={hands,board:[],leftEnd:null,rightEnd:null,turn:starter,starter,passesInRow:0,over:false,log:[],result:null,selectedIdx:undefined,forceDoubleSixLead:true,justDealt:true};
 }
 function dgDealNextHand(starterSeat){
   let set=shuffleArr(buildDominoSet()),hands=[[],[],[],[]];
@@ -892,9 +1003,9 @@ function dgDealNextHand(starterSeat){
   hands.forEach(h=>h.sort((x,y)=>(x.a-y.a)||(x.b-y.b)));
   dgGeneration++;
   dgHandCount++;
-  dgame={hands,board:[],leftEnd:null,rightEnd:null,turn:starterSeat,starter:starterSeat,passesInRow:0,over:false,log:[],result:null,selectedIdx:undefined,forceDoubleSixLead:false};
+  dgame={hands,board:[],leftEnd:null,rightEnd:null,turn:starterSeat,starter:starterSeat,passesInRow:0,over:false,log:[],result:null,selectedIdx:undefined,forceDoubleSixLead:false,justDealt:true};
 }
-function dgNextHand(){$("dgResult").classList.remove("show");let next=dgame.result.type==="domino"?dgame.lastWinnerSeat:(dgame.starter+1)%4;dgDealNextHand(next);dgProceed()}
+function dgNextHand(){$("dgResult").classList.remove("show");let next=dgame.result.type==="domino"?dgame.lastWinnerSeat:(dgame.starter+1)%4;dgStartHandWithAnimation(()=>dgDealNextHand(next))}
 
 function dgLegalPlaysForSeat(seat){
   let hand=dgame.hands[seat],out=[];
@@ -1027,9 +1138,11 @@ function dgRender(){
   let legalPlays=(dgame.turn===0&&!dgame.over)?dgLegalPlaysForSeat(0):[];
   $("dgHand").innerHTML=hand.map((t,i)=>{
     let tileLegal=legalPlays.some(m=>m.tile.a===t.a&&m.tile.b===t.b);
-    let cls="domino-tile lg vertical"+(t.a===t.b?" isdouble":"")+(i===dgame.selectedIdx?" selected":"")+(dgame.turn===0&&!dgame.over&&!tileLegal?" disabled":"");
-    return `<div class="${cls}" onclick="dgSelectTile(${i})">${halfHtml(t.a)}${halfHtml(t.b)}</div>`;
+    let cls="domino-tile lg vertical"+(t.a===t.b?" isdouble":"")+(i===dgame.selectedIdx?" selected":"")+(dgame.turn===0&&!dgame.over&&!tileLegal?" disabled":"")+(dgame.justDealt?" entering":"");
+    let style=dgame.justDealt?` style="animation-delay:${i*45}ms"`:"";
+    return `<div class="${cls}" onclick="dgSelectTile(${i})"${style}>${halfHtml(t.a)}${halfHtml(t.b)}</div>`;
   }).join("");
+  dgame.justDealt=false;
 
   $("dgPassBtn").style.display=(dgame.turn===0&&!dgame.over&&legalPlays.length===0)?"inline-block":"none";
   if(dgame.turn===0&&!dgame.over&&dgame.selectedIdx!==undefined){

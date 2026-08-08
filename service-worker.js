@@ -1,4 +1,4 @@
-const CACHE_NAME = "domino-boricua-v9";
+const CACHE_NAME = "domino-boricua-v10";
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
