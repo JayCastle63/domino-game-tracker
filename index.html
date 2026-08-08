@@ -886,7 +886,7 @@ function dgProceed(){
   dgRender();
   if(!dgame.over&&dgame.turn!==0){
     let gen=dgGeneration,seat=dgame.turn;
-    setTimeout(()=>{if(dgame&&dgGeneration===gen)dgAiPlay(seat)},20500+Math.random()*450);
+    setTimeout(()=>{if(dgame&&dgGeneration===gen)dgAiPlay(seat)},10500+Math.random()*450);
   }
 }
 function dgChooseAiMove(seat){
