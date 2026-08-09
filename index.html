@@ -86,6 +86,11 @@
         if (error) throw error;
         return;
       }
+      if (p[0] === "sessions" && p.length === 3 && p[2] === "liveGame") {
+        const { error } = await sb.from("session_live_game").upsert({ session_code: p[1], data: value, updated_at: new Date().toISOString() });
+        if (error) throw error;
+        return;
+      }
       throw new Error("Unsupported set path: " + ref.path);
     }
 
@@ -130,6 +135,7 @@
       if (p[0] === "sessions" && p.length === 4 && PUSH_TABLES[p[2]]) { const { error } = await sb.from(PUSH_TABLES[p[2]]).delete().eq("session_code", p[1]).eq("id", Number(p[3])); if (error) throw error; return; }
       if (p[0] === "viewerCodes" && p.length === 2) { const { error } = await sb.from("viewer_codes").delete().eq("code", p[1]); if (error) throw error; return; }
       if (p[0] === "tournaments" && p.length === 2) { const { error } = await sb.from("tournaments").delete().eq("code", p[1]); if (error) throw error; return; }
+      if (p[0] === "sessions" && p.length === 3 && p[2] === "liveGame") { const { error } = await sb.from("session_live_game").delete().eq("session_code", p[1]); if (error) throw error; return; }
       throw new Error("Unsupported remove path: " + ref.path);
     }
 
@@ -145,6 +151,10 @@
       }
       if (p[0] === "tournaments" && p.length === 2) {
         const { data } = await sb.from("tournaments").select("*").eq("code", p[1]).maybeSingle();
+        return { exists: () => !!data, val: () => data ? data.data : null };
+      }
+      if (p[0] === "sessions" && p.length === 3 && p[2] === "liveGame") {
+        const { data } = await sb.from("session_live_game").select("*").eq("session_code", p[1]).maybeSingle();
         return { exists: () => !!data, val: () => data ? data.data : null };
       }
       throw new Error("Unsupported get path: " + ref.path);
@@ -190,6 +200,21 @@
         push();
         const channel = sb.channel("tournament:" + code)
           .on("postgres_changes", { event: "*", schema: "public", table: "tournaments", filter: `code=eq.${code}` }, push)
+          .subscribe();
+        return () => { cancelled = true; sb.removeChannel(channel); };
+      }
+      if (p[0] === "sessions" && p.length === 3 && p[2] === "liveGame") {
+        const code = p[1];
+        let cancelled = false;
+        async function push() {
+          if (cancelled) return;
+          const { data } = await sb.from("session_live_game").select("*").eq("session_code", code).maybeSingle().catch(() => ({ data: null }));
+          if (cancelled) return;
+          callback({ val: () => (data ? data.data : null), exists: () => !!data });
+        }
+        push();
+        const channel = sb.channel("liveGame:" + code)
+          .on("postgres_changes", { event: "*", schema: "public", table: "session_live_game", filter: `session_code=eq.${code}` }, push)
           .subscribe();
         return () => { cancelled = true; sb.removeChannel(channel); };
       }
@@ -431,6 +456,12 @@
     .bracket-slot.empty{color:var(--muted);font-weight:600;cursor:default;font-style:italic}
     .bracket-slot.winner{background:linear-gradient(90deg,rgba(21,153,87,.2),rgba(21,153,87,.05));color:var(--green)}
     #tgNameFields .tgNameInput{margin-top:0}
+    .lg-seat-btn{border-radius:14px;padding:12px 8px;text-align:center;font-weight:800;font-size:.82rem;background:#eef4ff;color:var(--dark);border:1.5px solid #cbd8ec}
+    .lg-seat-btn.mine{background:linear-gradient(180deg,rgba(255,255,255,.3),rgba(255,255,255,0) 45%) var(--green);background-blend-mode:overlay;color:#fff;border-color:transparent}
+    .lg-seat-btn.taken{background:#eceff3;color:#697386}
+    .dg-turn .lg-countdown{display:block;font-size:.76rem;font-weight:700;opacity:.85;margin-top:2px}
+    .lg-toast{position:absolute;left:50%;top:calc(8px + env(safe-area-inset-top));transform:translateX(-50%);background:rgba(0,0,0,.82);color:#fff;padding:10px 16px;border-radius:12px;font-weight:800;font-size:.82rem;box-shadow:0 6px 18px rgba(0,0,0,.4);z-index:6;opacity:0;pointer-events:none;transition:opacity .25s;max-width:88%;text-align:center}
+    .lg-toast.show{opacity:1}
     .tg-champion-banner{text-align:center;background:linear-gradient(135deg,rgba(245,197,66,.88),rgba(255,242,178,.88));border:1px solid rgba(255,255,255,.6);color:#3b2800;font-weight:900;border-radius:18px;padding:15px;margin-top:11px;font-size:1.05rem;box-shadow:0 10px 26px rgba(0,0,0,.2)}
   </style>
 </head>
@@ -571,6 +602,7 @@
       </div>
       <div class="small" style="margin-top:14px">Players in this session</div>
       <div class="pillrow" id="sessionPlayersList"></div>
+      <button class="dark hidden" id="lgOpenBtn" style="margin-top:12px;width:100%" onclick="lgOpenTable()">&#x1F3B2; Play Online &mdash; Real Hands, Live</button>
       <div class="grid2" style="margin-top:12px"><button class="danger" onclick="leaveSession()">Leave Session</button><button class="danger" id="endSessionBtn" onclick="endSession()">End for Everyone</button></div>
     </div>
   </div>
@@ -668,6 +700,46 @@
     </div>
   </div>
   <div class="dg-shuffle-overlay" id="dgShuffleOverlay"></div>
+</div>
+
+<div class="domino-modal" id="liveGameModal">
+  <div class="dg-topbar"><h2>Online Table</h2><button class="dg-close" onclick="lgLeaveTable()">&#10005; Leave Table</button></div>
+  <div class="lg-toast" id="lgToast"></div>
+
+  <div id="lgSetupView" style="flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:14px">
+    <div class="dg-result-card" style="max-width:380px;width:100%">
+      <div class="dg-result-title">Take Your Seats</div>
+      <div class="dg-result-detail">Tap an open seat to sit down. Any seat still open when the hand is dealt plays as the computer &mdash; and any human seat gets 60 seconds per turn before it auto-plays for you.</div>
+      <div id="lgSeatPicker" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0"></div>
+      <button class="green" style="width:100%" onclick="lgDealFirstHand()">Deal First Hand</button>
+    </div>
+  </div>
+
+  <div class="hidden" id="lgPlayView" style="display:contents">
+    <div class="dg-scoreline" id="lgScoreLine"></div>
+    <div class="dg-oppRow"><div class="dg-seat" id="lgSeatNorth">Partner &bull; 7</div></div>
+    <div class="dg-mid">
+      <div class="dg-seat" id="lgSeatWest">West &bull; 7</div>
+      <div class="dg-board" id="lgBoard"></div>
+      <div class="dg-seat" id="lgSeatEast">East &bull; 7</div>
+    </div>
+    <div class="dg-turn" id="lgTurnLabel">Dealing&hellip;</div>
+    <div class="dg-hand" id="lgHand"></div>
+    <div class="dg-actions">
+      <button class="gold" id="lgPlayLeftBtn" onclick="lgHumanPlayEnd('left')" style="display:none">Play Left (&#8592;<span id="lgLeftVal"></span>)</button>
+      <button class="gold" id="lgPlayRightBtn" onclick="lgHumanPlayEnd('right')" style="display:none">Play Right (<span id="lgRightVal"></span>&#8594;)</button>
+      <button class="gray" id="lgPassBtn" onclick="lgHumanPass()" style="display:none">Pass</button>
+    </div>
+  </div>
+
+  <div class="dg-result" id="lgResult">
+    <div class="dg-result-card">
+      <div class="dg-result-title" id="lgResultTitle">Hand Over</div>
+      <div class="dg-result-detail" id="lgResultDetail"></div>
+      <div class="dg-hands-reveal" id="lgHandsReveal"></div>
+      <div class="grid2"><button class="green" onclick="lgNextHand()">Next Hand</button><button class="gray" onclick="lgLeaveTable()">Leave Table</button></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -897,6 +969,7 @@ function leaveSession(silent){
   let bridge=window.FirebaseBridge,code=session.code,playerId=session.playerId;
   if(bridge&&bridge.enabled&&code&&playerId)bridge.remove(bridge.ref(bridge.db,`sessions/${code}/players/${playerId}`)).catch(()=>{});
   unsubscribeSession();
+  if($("liveGameModal").classList.contains("show"))lgLeaveTable();
   session={active:false,code:null,isHost:false,role:"admin",viewerCode:null,playerId:null,playerName:null};
   localStorage.removeItem("prDominoSessionV1");
   loadAutoSave();render();
@@ -906,6 +979,7 @@ function endSession(){
   if(!confirm("End this session for everyone? Everyone still connected will be disconnected."))return;
   let bridge=window.FirebaseBridge,code=session.code,viewerCode=session.viewerCode;
   bridge.remove(bridge.ref(bridge.db,`sessions/${code}`)).catch(()=>{});
+  bridge.remove(bridge.ref(bridge.db,`sessions/${code}/liveGame`)).catch(()=>{});
   if(viewerCode)bridge.remove(bridge.ref(bridge.db,`viewerCodes/${viewerCode}`)).catch(()=>{});
   leaveSession(true);
 }
@@ -1015,6 +1089,7 @@ function renderSessionCard(){
     $("endSessionBtn").style.display=session.isHost?"":"none";
     $("sessionRoleNote").textContent=session.role==="viewer"?"You're viewing this session live — you can't change scores.":"You can add scores and rounds for this session.";
     renderSessionPlayers();
+    $("lgOpenBtn").classList.toggle("hidden",state.selectedRuleSet!=="puertoRican");
   }else{
     solo.classList.remove("hidden");active.classList.add("hidden");
     let enabled=!!(window.FirebaseBridge&&window.FirebaseBridge.enabled);
@@ -1686,6 +1761,298 @@ function dgRender(){
     $("dgPlayRightBtn").style.display=opts.includes("right")?"inline-block":"none";
   }else{
     $("dgPlayLeftBtn").style.display="none";$("dgPlayRightBtn").style.display="none";
+  }
+}
+
+/* ---- Online table: real hands played live by real session members instead of computer
+   opponents. Lives inside an active shared session (reuses its code/players/trust model)
+   as sessions/{code}/liveGame — one JSON document, same "whole-document overwrite on every
+   move" approach as tournaments. To avoid every connected device racing to play the same
+   AI/timeout move at once, only the SESSION HOST's device runs the watchdog that plays
+   computer seats and auto-plays a human seat once their 60-second clock runs out — a
+   deliberate single-writer simplification (documented for the user) rather than building
+   real compare-and-swap concurrency control on top of an open, no-auth Postgres table. ---- */
+let liveGame=null;let lgUnsub=null;let lgMySeat=null;let lgSelectedIdx=undefined;
+let lgWatchdogInterval=null;let lgCountdownInterval=null;let lgScheduledMoveSeq=null;
+let lgLastAutoShown=null;let lgToastTimer=null;
+function lgDeadline(){return new Date(Date.now()+60000).toISOString()}
+function lgDefaultDoc(){return {status:"setup",seats:[{type:"open"},{type:"open"},{type:"open"},{type:"open"}],moveSeq:0,handCount:0}}
+function lgOpenTable(){
+  if(!session.active){alert("Start or join a shared session first — online play uses the same session code.");return}
+  if(state.selectedRuleSet!=="puertoRican"){alert("Online play is available for Puerto Rican dominoes right now.");return}
+  if(!window.FirebaseBridge||!window.FirebaseBridge.enabled){alert("Ask the app owner to finish the one-time shared-sessions setup.");return}
+  $("liveGameModal").classList.add("show");
+  lgMySeat=null;lgSelectedIdx=undefined;lgLastAutoShown=null;
+  lgSubscribe();
+}
+function lgLeaveTable(){$("liveGameModal").classList.remove("show");lgUnsubscribeInternal();liveGame=null;lgMySeat=null}
+function lgUnsubscribeInternal(){if(lgUnsub){lgUnsub();lgUnsub=null}if(lgWatchdogInterval){clearInterval(lgWatchdogInterval);lgWatchdogInterval=null}if(lgCountdownInterval){clearInterval(lgCountdownInterval);lgCountdownInterval=null}lgScheduledMoveSeq=null}
+function lgSubscribe(){
+  lgUnsubscribeInternal();
+  let bridge=window.FirebaseBridge,sref=bridge.ref(bridge.db,`sessions/${session.code}/liveGame`);
+  lgUnsub=bridge.onValue(sref,snap=>{
+    let val=snap.val();
+    if(!val){liveGame=lgDefaultDoc();if(session.role!=="viewer")lgPush()}
+    else liveGame=val;
+    lgSyncMySeat();lgRender();
+  });
+  lgWatchdogInterval=setInterval(lgHostWatchdogTick,1000);
+  lgCountdownInterval=setInterval(lgUpdateCountdownDisplay,1000);
+}
+function lgSyncMySeat(){if(!liveGame||!liveGame.seats){lgMySeat=null;return}let idx=liveGame.seats.findIndex(s=>s.type==="human"&&s.playerId===session.playerId);lgMySeat=idx>=0?idx:null}
+function lgPush(){let bridge=window.FirebaseBridge;bridge.set(bridge.ref(bridge.db,`sessions/${session.code}/liveGame`),liveGame).catch(e=>alert("Couldn't sync the table: "+e.message+"\n\nIf this is the first time playing online, the app owner needs to run the one-time online-play setup (supabase/live_game_schema.sql) in Supabase."))}
+function lgSeatTap(i){
+  if(blockedForViewer())return;
+  if(!liveGame||liveGame.status!=="setup")return;
+  let s=liveGame.seats[i];
+  if(s.type==="human"&&s.playerId===session.playerId){liveGame.seats[i]={type:"open"};lgPush();return}
+  if(s.type!=="open")return;
+  liveGame.seats=liveGame.seats.map(x=>(x.type==="human"&&x.playerId===session.playerId)?{type:"open"}:x);
+  liveGame.seats[i]={type:"human",playerId:session.playerId,name:session.playerName};
+  lgPush();
+}
+function lgResetTable(){if(blockedForViewer())return;if(!confirm("Reset seats and start over?"))return;liveGame=lgDefaultDoc();lgPush()}
+function lgDealFirstHand(){
+  if(blockedForViewer())return;
+  if(!liveGame||liveGame.status!=="setup")return;
+  if(!liveGame.seats.some(s=>s.type==="human")){alert("At least one person needs to sit down first.");return}
+  let set=shuffleArr(buildDominoSet()),hands=[[],[],[],[]];
+  for(let i=0;i<28;i++)hands[i%4].push(set[i]);
+  hands.forEach(h=>h.sort((x,y)=>(x.a-y.a)||(x.b-y.b)));
+  let starter=hands.findIndex(h=>h.some(t=>t.a===6&&t.b===6));
+  let seats=liveGame.seats.map(s=>s.type==="open"?{type:"ai"}:s);
+  liveGame={status:"playing",seats,hands,board:[],leftEnd:null,rightEnd:null,turn:starter,starter,passesInRow:0,over:false,log:[],result:null,forceDoubleSixLead:true,moveSeq:(liveGame.moveSeq||0)+1,handCount:(liveGame.handCount||0)+1,lastAuto:null,turnDeadline:seats[starter].type==="human"?lgDeadline():null};
+  lgPush();
+}
+function lgNextHand(){
+  if(blockedForViewer())return;
+  if(!liveGame||liveGame.status!=="handOver")return;
+  let next=liveGame.result.type==="domino"?liveGame.lastWinnerSeat:(liveGame.starter+1)%4;
+  let set=shuffleArr(buildDominoSet()),hands=[[],[],[],[]];
+  for(let i=0;i<28;i++)hands[i%4].push(set[i]);
+  hands.forEach(h=>h.sort((x,y)=>(x.a-y.a)||(x.b-y.b)));
+  liveGame={status:"playing",seats:liveGame.seats,hands,board:[],leftEnd:null,rightEnd:null,turn:next,starter:next,passesInRow:0,over:false,log:[],result:null,forceDoubleSixLead:false,moveSeq:(liveGame.moveSeq||0)+1,handCount:(liveGame.handCount||0)+1,lastAuto:null,turnDeadline:liveGame.seats[next].type==="human"?lgDeadline():null};
+  lgPush();
+}
+function lgLegalPlays(seat){
+  let hand=liveGame.hands[seat],out=[];
+  if(liveGame.board.length===0){
+    if(liveGame.forceDoubleSixLead){let t=hand.find(t=>t.a===6&&t.b===6);if(t)out.push({tile:t,end:"lead"})}
+    else hand.forEach(t=>out.push({tile:t,end:"lead"}));
+    return out;
+  }
+  hand.forEach(t=>{if(t.a===liveGame.leftEnd||t.b===liveGame.leftEnd)out.push({tile:t,end:"left"});if(t.a===liveGame.rightEnd||t.b===liveGame.rightEnd)out.push({tile:t,end:"right"})});
+  return out;
+}
+function lgChooseAiMove(seat){
+  let moves=lgLegalPlays(seat);
+  if(!moves.length)return null;
+  if(liveGame.hands[seat].length===1)return moves[0];
+  function resultEndValue(m){if(m.end==="lead")return m.tile.a===m.tile.b?m.tile.a:Math.max(m.tile.a,m.tile.b);let cur=m.end==="left"?liveGame.leftEnd:liveGame.rightEnd;return m.tile.a===cur?m.tile.b:m.tile.a}
+  function seenCount(val){let c=0;liveGame.log.forEach(e=>{if(e.tile&&(e.tile.a===val||e.tile.b===val))c++});return c}
+  function score(m){return (m.tile.a+m.tile.b)+(m.tile.a===m.tile.b?15:0)+seenCount(resultEndValue(m))*3}
+  moves.sort((m1,m2)=>score(m2)-score(m1));
+  return moves[0];
+}
+function lgApplyPlay(seat,tile,end,auto){
+  let hand=liveGame.hands[seat],idx=hand.findIndex(t=>t.a===tile.a&&t.b===tile.b);
+  if(idx<0)return;
+  let preLeftEnd=liveGame.leftEnd,preRightEnd=liveGame.rightEnd;
+  liveGame.lastAuto=auto?{seat,time:new Date().toISOString()}:null;
+  hand.splice(idx,1);
+  if(end==="lead"){liveGame.board=[{left:tile.a,right:tile.b}];liveGame.leftEnd=tile.a;liveGame.rightEnd=tile.b}
+  else if(end==="left"){let other=tile.a===liveGame.leftEnd?tile.b:tile.a;liveGame.board.unshift({left:other,right:liveGame.leftEnd});liveGame.leftEnd=other}
+  else{let other=tile.a===liveGame.rightEnd?tile.b:tile.a;liveGame.board.push({left:liveGame.rightEnd,right:other});liveGame.rightEnd=other}
+  liveGame.log.push({seat,tile:{a:tile.a,b:tile.b},end,preLeftEnd,preRightEnd});
+  liveGame.passesInRow=0;
+  liveGame.moveSeq=(liveGame.moveSeq||0)+1;
+  lgAfterAction(seat,hand.length===0);
+}
+function lgApplyPass(seat,auto){
+  liveGame.lastAuto=auto?{seat,time:new Date().toISOString()}:null;
+  liveGame.passesInRow=(liveGame.passesInRow||0)+1;
+  liveGame.log.push({seat,pass:true});
+  liveGame.moveSeq=(liveGame.moveSeq||0)+1;
+  lgAfterAction(seat,false);
+}
+function lgAfterAction(seat,wentOut){
+  if(wentOut){lgFinishHand({type:"domino",seat});return}
+  if(liveGame.passesInRow>=4){lgFinishHand({type:"block"});return}
+  liveGame.turn=(liveGame.turn+1)%4;
+  liveGame.turnDeadline=liveGame.seats[liveGame.turn].type==="human"?lgDeadline():null;
+  lgPush();
+}
+function lgFinishHand(info){
+  liveGame.over=true;
+  let pipsOf=seat=>liveGame.hands[seat].reduce((s,t)=>s+t.a+t.b,0);
+  let team1Pips=pipsOf(0)+pipsOf(2),team2Pips=pipsOf(1)+pipsOf(3);
+  let winningTeam=null,points=0,capicu=false,chuchazo=false,lastLog=null;
+  if(info.type==="domino"){
+    liveGame.lastWinnerSeat=info.seat;
+    winningTeam=(info.seat===0||info.seat===2)?1:2;
+    points=winningTeam===1?team2Pips:team1Pips;
+    lastLog=liveGame.log[liveGame.log.length-1];
+    if(specialsEnabled()&&lastLog&&lastLog.end!=="lead"&&lastLog.preLeftEnd===lastLog.preRightEnd&&(lastLog.tile.a===lastLog.preLeftEnd||lastLog.tile.b===lastLog.preLeftEnd))capicu=true;
+    if(specialsEnabled()&&lastLog&&!capicu&&lastLog.tile.a===lastLog.tile.b)chuchazo=true;
+  }else if(team1Pips!==team2Pips){
+    winningTeam=team1Pips<team2Pips?1:2;
+    points=Math.abs(team1Pips-team2Pips);
+  }
+  liveGame.result={winningTeam,points,capicu,chuchazo,type:info.type,team1Pips,team2Pips};
+  liveGame.status="handOver";
+  liveGame.turnDeadline=null;
+  if(winningTeam){
+    let premio=0,pi=-1;
+    if(mode()==="on"&&premios.length){pi=nextPremioIndex();if(pi>=0){premio=premios[pi];state.premioUsed[pi]=true}}
+    let bonus=capicu?100:0,total=points+premio+bonus;
+    addScore(winningTeam,total,{reason:info.type==="domino"?"Domino out (online table)":"Blocked (online table)",detail:`${points} pips${premio?" + "+premio+" premio":""}${bonus?" + 100 capicú":""}`,premioIdx:pi});
+  }
+  lgPush();
+}
+function lgSelectTile(i){
+  if(blockedForViewer())return;
+  if(!liveGame||liveGame.status!=="playing"||lgMySeat===null||liveGame.turn!==lgMySeat)return;
+  let t=liveGame.hands[lgMySeat][i];
+  let opts=lgLegalPlays(lgMySeat).filter(m=>m.tile.a===t.a&&m.tile.b===t.b);
+  if(!opts.length)return;
+  if(lgSelectedIdx===i){lgSelectedIdx=undefined;lgRender();return}
+  if(opts.length===1){lgSelectedIdx=undefined;lgApplyPlay(lgMySeat,t,opts[0].end,false);return}
+  lgSelectedIdx=i;lgRender();
+}
+function lgHumanPlayEnd(end){
+  if(!liveGame||lgMySeat===null||liveGame.turn!==lgMySeat||lgSelectedIdx===undefined)return;
+  let t=liveGame.hands[lgMySeat][lgSelectedIdx];
+  lgSelectedIdx=undefined;
+  lgApplyPlay(lgMySeat,t,end,false);
+}
+function lgHumanPass(){
+  if(blockedForViewer())return;
+  if(!liveGame||liveGame.status!=="playing"||lgMySeat===null||liveGame.turn!==lgMySeat||lgLegalPlays(lgMySeat).length)return;
+  lgApplyPass(lgMySeat,false);
+}
+function lgHostWatchdogTick(){
+  if(!session.isHost||!liveGame||liveGame.status!=="playing")return;
+  let seat=liveGame.turn,info=liveGame.seats[seat];
+  if(info.type==="ai"){
+    if(lgScheduledMoveSeq===liveGame.moveSeq)return;
+    lgScheduledMoveSeq=liveGame.moveSeq;
+    let seq=liveGame.moveSeq;
+    setTimeout(()=>{
+      if(!liveGame||liveGame.moveSeq!==seq||liveGame.status!=="playing"||liveGame.turn!==seat)return;
+      let move=lgChooseAiMove(seat);
+      if(!move)lgApplyPass(seat,false);else lgApplyPlay(seat,move.tile,move.end,false);
+    },1800+Math.random()*900);
+    return;
+  }
+  if(info.type==="human"&&liveGame.turnDeadline&&Date.now()>=new Date(liveGame.turnDeadline).getTime()){
+    if(lgScheduledMoveSeq===liveGame.moveSeq)return;
+    lgScheduledMoveSeq=liveGame.moveSeq;
+    let seq=liveGame.moveSeq;
+    setTimeout(()=>{
+      if(!liveGame||liveGame.moveSeq!==seq||liveGame.status!=="playing"||liveGame.turn!==seat)return;
+      let move=lgChooseAiMove(seat);
+      if(!move)lgApplyPass(seat,true);else lgApplyPlay(seat,move.tile,move.end,true);
+    },300);
+  }
+}
+function lgShowToast(msg){let el=$("lgToast");if(!el)return;el.textContent=msg;el.classList.add("show");clearTimeout(lgToastTimer);lgToastTimer=setTimeout(()=>el.classList.remove("show"),3200)}
+function lgUpdateCountdownDisplay(){
+  if(!liveGame||liveGame.status!=="playing")return;
+  let el=document.querySelector("#lgTurnLabel .lg-countdown");
+  if(!el)return;
+  let info=liveGame.seats[liveGame.turn];
+  if(info.type!=="human"||!liveGame.turnDeadline){el.textContent="";return}
+  let secLeft=Math.max(0,Math.ceil((new Date(liveGame.turnDeadline).getTime()-Date.now())/1000));
+  el.textContent=secLeft+"s left";
+}
+function lgRenderSeatPicker(){
+  let box=$("lgSeatPicker");if(!box||!liveGame)return;
+  let n1=teamName(1),n2=teamName(2);
+  box.innerHTML=[0,1,2,3].map(i=>{
+    let s=liveGame.seats[i],team=i%2===0?n1:n2,mine=s.type==="human"&&s.playerId===session.playerId;
+    let cls="lg-seat-btn"+(mine?" mine":s.type==="human"?" taken":"");
+    let who=s.type==="human"?escapeHtml(s.name)+(mine?" (you)":""):"Open — tap to sit";
+    return `<button class="${cls}" onclick="lgSeatTap(${i})">Seat ${i+1}<br><span style="font-size:.7rem">${escapeHtml(team)}</span><br>${who}</button>`;
+  }).join("")+`<button class="mini-button" style="grid-column:1/-1" onclick="lgResetTable()">Reset Seats</button>`;
+}
+function lgRenderResult(){
+  let r=liveGame.result,n1=teamName(1),n2=teamName(2),title,detail;
+  let viewer=lgMySeat!==null?lgMySeat:0,iAmPlaying=lgMySeat!==null,myTeam=(viewer===0||viewer===2)?1:2;
+  if(r.type==="domino"){
+    title=(iAmPlaying?(r.winningTeam===myTeam?"Your team dominó!":"They dominó."):(escapeHtml(r.winningTeam===1?n1:n2)+" dominó!"))+" 🏆";
+    let loserPips=r.winningTeam===1?r.team2Pips:r.team1Pips;
+    let flourish=r.capicu?" (includes a Capicú bonus!)":r.chuchazo?" (a Chuchazo finish!)":"";
+    detail=`${escapeHtml(r.winningTeam===1?n1:n2)} scores ${r.points}${flourish} — the other side had ${loserPips} pips left.`;
+  }else if(r.winningTeam){
+    title="Blocked — "+(r.winningTeam===1?n1:n2)+" wins the count";
+    detail=`Board blocked. ${escapeHtml(r.winningTeam===1?n1:n2)} had fewer pips (${Math.min(r.team1Pips,r.team2Pips)} vs ${Math.max(r.team1Pips,r.team2Pips)}) and scores the ${r.points}-point difference.`;
+  }else{
+    title="Blocked — tied";
+    detail=`Both sides had ${r.team1Pips} pips. No points awarded.`;
+  }
+  $("lgResultTitle").textContent=title;
+  $("lgResultDetail").textContent=detail;
+  let seatIdentity=s=>{let info=liveGame.seats[s];return info.type==="human"?info.name:(info.type==="ai"?"Computer":"Open")};
+  $("lgHandsReveal").innerHTML=`<div class="small" style="margin-bottom:6px">Team ${escapeHtml(n1)}: ${escapeHtml(seatIdentity(0))} &amp; ${escapeHtml(seatIdentity(2))} • Team ${escapeHtml(n2)}: ${escapeHtml(seatIdentity(1))} &amp; ${escapeHtml(seatIdentity(3))}</div>`+
+    [0,1,2,3].map(seat=>`<div class="seat-row"><strong>${escapeHtml(seatIdentity(seat))}${seat===viewer&&iAmPlaying?" (you)":""}:</strong> ${liveGame.hands[seat].length?liveGame.hands[seat].map(t=>t.a+"|"+t.b).join("  "):"(empty)"}</div>`).join("");
+  $("lgResult").classList.add("show");
+}
+function lgRender(){
+  if(!liveGame)return;
+  let setupView=$("lgSetupView"),playView=$("lgPlayView");
+  if(liveGame.status==="setup"){
+    setupView.classList.remove("hidden");
+    playView.classList.add("hidden");
+    $("lgResult").classList.remove("show");
+    lgRenderSeatPicker();
+    return;
+  }
+  setupView.classList.add("hidden");
+  playView.classList.remove("hidden");
+
+  let viewer=lgMySeat!==null?lgMySeat:0;
+  let westSeat=(viewer+1)%4,partnerSeat=(viewer+2)%4,eastSeat=(viewer+3)%4;
+  $("lgScoreLine").innerHTML=`<span class="dg-score-team">${escapeHtml(teamName(1))}<b>${state.team1Score}</b></span><span class="dg-score-team">${escapeHtml(teamName(2))}<b>${state.team2Score}</b></span><span class="dg-hand-count">Hand ${liveGame.handCount||1}</span>`;
+  $("lgSeatNorth").innerHTML=dgSeatHtml("Partner",liveGame.hands[partnerSeat].length);
+  $("lgSeatWest").innerHTML=dgSeatHtml("West",liveGame.hands[westSeat].length);
+  $("lgSeatEast").innerHTML=dgSeatHtml("East",liveGame.hands[eastSeat].length);
+  $("lgSeatNorth").classList.toggle("turn",liveGame.turn===partnerSeat&&liveGame.status==="playing");
+  $("lgSeatWest").classList.toggle("turn",liveGame.turn===westSeat&&liveGame.status==="playing");
+  $("lgSeatEast").classList.toggle("turn",liveGame.turn===eastSeat&&liveGame.status==="playing");
+
+  let turnLabel=$("lgTurnLabel");
+  if(liveGame.status==="handOver"){turnLabel.innerHTML="Hand over";turnLabel.classList.remove("you")}
+  else if(liveGame.turn===viewer&&lgMySeat!==null){turnLabel.innerHTML='Your turn — tap a tile <span class="lg-countdown"></span>';turnLabel.classList.add("you")}
+  else{let info=liveGame.seats[liveGame.turn],who=info.type==="human"?info.name:"The computer";turnLabel.innerHTML=escapeHtml(who)+' is thinking… <span class="lg-countdown"></span>';turnLabel.classList.remove("you")}
+  lgUpdateCountdownDisplay();
+
+  $("lgBoard").innerHTML=dgBoardHtml(liveGame.board);
+
+  let isMyTurn=liveGame.status==="playing"&&lgMySeat!==null&&liveGame.turn===lgMySeat;
+  let hand=lgMySeat!==null?liveGame.hands[lgMySeat]:[];
+  let legalPlays=isMyTurn?lgLegalPlays(lgMySeat):[];
+  $("lgHand").innerHTML=hand.map((t,i)=>{
+    let tileLegal=legalPlays.some(m=>m.tile.a===t.a&&m.tile.b===t.b);
+    let cls="domino-tile lg vertical"+(t.a===t.b?" isdouble":"")+(i===lgSelectedIdx?" selected":"")+(isMyTurn&&!tileLegal?" disabled":"");
+    return `<div class="${cls}" onclick="lgSelectTile(${i})">${halfHtml(t.a)}${halfHtml(t.b)}</div>`;
+  }).join("");
+
+  $("lgPassBtn").style.display=(isMyTurn&&legalPlays.length===0)?"inline-block":"none";
+  if(isMyTurn&&lgSelectedIdx!==undefined&&hand[lgSelectedIdx]){
+    let t=hand[lgSelectedIdx],opts=lgLegalPlays(lgMySeat).filter(m=>m.tile.a===t.a&&m.tile.b===t.b).map(m=>m.end);
+    $("lgLeftVal").textContent=liveGame.leftEnd;$("lgRightVal").textContent=liveGame.rightEnd;
+    $("lgPlayLeftBtn").style.display=opts.includes("left")?"inline-block":"none";
+    $("lgPlayRightBtn").style.display=opts.includes("right")?"inline-block":"none";
+  }else{
+    $("lgPlayLeftBtn").style.display="none";$("lgPlayRightBtn").style.display="none";
+  }
+
+  if(liveGame.status==="handOver")lgRenderResult();else $("lgResult").classList.remove("show");
+
+  if(liveGame.lastAuto&&liveGame.lastAuto.time!==lgLastAutoShown){
+    lgLastAutoShown=liveGame.lastAuto.time;
+    let info=liveGame.seats[liveGame.lastAuto.seat],name=liveGame.lastAuto.seat===lgMySeat?"Your":escapeHtml((info&&info.name)||"Their");
+    lgShowToast(name+" 60 seconds ran out — played automatically.");
   }
 }
 
