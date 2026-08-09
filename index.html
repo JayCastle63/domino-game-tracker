@@ -758,6 +758,10 @@ let session={active:false,code:null,isHost:false,role:"admin",viewerCode:null,pl
 let tournament=null;let tournamentUnsub=null;let tgNameFieldCount=0;
 function blockedForViewer(){if(session.active&&session.role==="viewer"){alert("You're in view-only mode for this session. Ask the host for the player code to make changes.");return true}return false}
 function $(id){return document.getElementById(id)}function activeRule(){return RULE_SETS[state.selectedRuleSet]||RULE_SETS.puertoRican}function teamName(t){return t===1?($("team1Name").value.trim()||"Team 1"):($("team2Name").value.trim()||"Team 2")}function target(){return Number($("targetScore").value)||activeRule().defaultTarget}function mode(){return $("premiosMode").value}function now(){return new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}function selectedWinner(){return Number(document.querySelector('input[name="handWinnerRadio"]:checked').value)}function nextPremioIndex(){return state.premioUsed.findIndex(x=>!x)}function escapeHtml(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}function whenFirebaseReady(cb){if(window.FirebaseBridge){cb()}else{window.addEventListener("firebase-ready",cb,{once:true})}}
+/* People often paste the whole share link (copied via "Copy Link") into a "enter the code"
+   prompt instead of just the code — pull the code back out of a pasted link so that still
+   works, while a bare code typed by hand passes through unchanged. */
+function extractShareCode(raw,paramName){let s=(raw||"").trim();if(!s)return "";let m=s.match(new RegExp(paramName+"=([^&\\s]+)","i"));return m?decodeURIComponent(m[1]):s}
 
 function openRegionModal(allowClose=false){
   $("regionModal").classList.add("show");
@@ -915,7 +919,7 @@ async function generateUniqueViewerCode(){for(let i=0;i<5;i++){let code=generate
    "share the link and trust people" system — but it keeps a casual viewer from fat-fingering
    a score change, and lets the host hand out a safe link to spectators. */
 async function resolveJoinCode(rawCode){
-  let code=(rawCode||"").trim().toUpperCase();
+  let code=extractShareCode(rawCode,"join").toUpperCase();
   if(!code)return null;
   let bridge=window.FirebaseBridge;
   if(code.startsWith("V-")){
@@ -1059,7 +1063,7 @@ function tryRestoreSession(){
   });
 }
 function checkJoinLinkOnBoot(){
-  let m=location.hash.match(/join=([A-Za-z0-9-]+)/);
+  let m=location.hash.match(/join=([A-Za-z0-9-]+)/i);
   if(!m)return;
   let code=m[1].toUpperCase();
   history.replaceState(null,"",location.pathname+location.search);
@@ -1232,9 +1236,11 @@ async function tgGenerateUniqueCode(){
 }
 function tgJoinPrompt(){
   if(!window.FirebaseBridge||!window.FirebaseBridge.enabled){alert("Ask the app owner to finish the one-time shared-sessions setup.");return}
-  let code=prompt("Enter the tournament code:");
+  let raw=prompt("Enter the tournament code:");
+  if(!raw)return;
+  let code=extractShareCode(raw,"tourney").toUpperCase();
   if(!code)return;
-  tgJoin(code.trim().toUpperCase());
+  tgJoin(code);
 }
 async function tgJoin(code){
   try{
@@ -1286,7 +1292,7 @@ function tgCopyLink(){
   else alert("Copy this link:\n"+url);
 }
 function tgCheckJoinLinkOnBoot(){
-  let m=location.hash.match(/tourney=([A-Za-z0-9-]+)/);
+  let m=location.hash.match(/tourney=([A-Za-z0-9-]+)/i);
   if(!m)return;
   let code=m[1].toUpperCase();
   history.replaceState(null,"",location.pathname+location.search);
