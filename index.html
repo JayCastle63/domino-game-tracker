@@ -1380,7 +1380,7 @@ function applyCategoryVisibility(){let cat=activeRule().category||"team";let isI
    Team 2, turn order 0->1->2->3 so partners never play consecutively, matching a real table.
    Finished hands feed straight into the normal addScore() pipeline, so premios/history/
    session-sync (when not in a shared session) all just work unmodified. ---- */
-let dgame=null;let dgGeneration=0;let dgHandCount=0;
+let dgame=null;let dgGeneration=0;let dgHandCount=0;let dgTileKeySeq=0;
 const DG_PIP_POS={0:[],1:[[2,2]],2:[[1,1],[3,3]],3:[[1,1],[2,2],[3,3]],4:[[1,1],[1,3],[3,1],[3,3]],5:[[1,1],[1,3],[2,2],[3,1],[3,3]],6:[[1,1],[2,1],[3,1],[1,3],[2,3],[3,3]]};
 function buildDominoSet(){let s=[];for(let a=0;a<=6;a++)for(let b=a;b<=6;b++)s.push({a,b});return s}
 function shuffleArr(arr){for(let i=arr.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
@@ -1452,9 +1452,46 @@ function dgBoardHtml(board){
     let rotate=p.isDouble?(p.horizontal?90:0):(p.horizontal?0:90);
     let flip=p.horizontal&&!p.isDouble&&!p.goingRight;
     let left=p.x+offX-DG_TILE_LEN/2,top=p.y+offY-DG_TILE_WID/2;
-    return `<div style="position:absolute;left:${left}px;top:${top}px;transform:rotate(${rotate}deg)${flip?" scaleX(-1)":""}">${tileHtml(p.tile.left,p.tile.right,false)}</div>`;
+    return `<div data-key="${p.tile._key}" style="position:absolute;left:${left}px;top:${top}px;transform:rotate(${rotate}deg)${flip?" scaleX(-1)":""}">${tileHtml(p.tile.left,p.tile.right,false)}</div>`;
   }).join("");
   return `<div style="position:relative;width:${boardW}px;height:${boardH}px;flex:none">${tiles}</div>`;
+}
+
+/* The board redraws from scratch on every move (offsets shift as the layout re-centers
+   around its growing bounding box), so without help every already-placed tile would just
+   snap to its new spot. FLIP (First-Last-Invert-Play): grab each tile's on-screen rect
+   before the redraw, swap in the new HTML, then for any tile whose key survived, offset it
+   back to where it used to be and transition it forward to its real position — the tile
+   glides instead of jumping. A tile with no match is brand new: give it a small scale/fade
+   entrance instead of a glide. */
+function dgAnimateBoardUpdate(container,newHtml){
+  let before={};
+  container.querySelectorAll("[data-key]").forEach(el=>{before[el.dataset.key]=el.getBoundingClientRect()});
+  container.innerHTML=newHtml;
+  container.querySelectorAll("[data-key]").forEach(el=>{
+    let base=el.style.transform,prev=before[el.dataset.key];
+    if(!prev){
+      el.style.opacity="0";
+      el.style.transition="none";
+      el.style.transform=`${base} scale(.5)`;
+      el.getBoundingClientRect();
+      requestAnimationFrame(()=>{
+        el.style.transition="transform .3s cubic-bezier(.2,.8,.2,1), opacity .3s ease";
+        el.style.transform=base;
+        el.style.opacity="1";
+      });
+      return;
+    }
+    let now=el.getBoundingClientRect(),dx=prev.left-now.left,dy=prev.top-now.top;
+    if(Math.abs(dx)<0.5&&Math.abs(dy)<0.5)return;
+    el.style.transition="none";
+    el.style.transform=`translate(${dx}px,${dy}px) ${base}`;
+    el.getBoundingClientRect();
+    requestAnimationFrame(()=>{
+      el.style.transition="transform .28s cubic-bezier(.2,.8,.2,1)";
+      el.style.transform=base;
+    });
+  });
 }
 
 function renderPlayComputerCard(){
@@ -1591,6 +1628,7 @@ function dgDealFirstHand(){
   let starter=hands.findIndex(h=>h.some(t=>t.a===6&&t.b===6));
   dgGeneration++;
   dgHandCount=1;
+  dgTileKeySeq=0;
   dgame={hands,board:[],leftEnd:null,rightEnd:null,turn:starter,starter,passesInRow:0,over:false,log:[],result:null,selectedIdx:undefined,forceDoubleSixLead:true,justDealt:true};
 }
 function dgDealNextHand(starterSeat){
@@ -1599,6 +1637,7 @@ function dgDealNextHand(starterSeat){
   hands.forEach(h=>h.sort((x,y)=>(x.a-y.a)||(x.b-y.b)));
   dgGeneration++;
   dgHandCount++;
+  dgTileKeySeq=0;
   dgame={hands,board:[],leftEnd:null,rightEnd:null,turn:starterSeat,starter:starterSeat,passesInRow:0,over:false,log:[],result:null,selectedIdx:undefined,forceDoubleSixLead:false,justDealt:true};
 }
 function dgNextHand(){$("dgResult").classList.remove("show");let next=dgame.result.type==="domino"?dgame.lastWinnerSeat:(dgame.starter+1)%4;dgStartHandWithAnimation(()=>dgDealNextHand(next))}
@@ -1620,9 +1659,10 @@ function dgPlayTile(seat,tile,end){
   let hand=dgame.hands[seat],idx=hand.findIndex(t=>t.a===tile.a&&t.b===tile.b);
   let preLeftEnd=dgame.leftEnd,preRightEnd=dgame.rightEnd;
   hand.splice(idx,1);
-  if(end==="lead"){dgame.board=[{left:tile.a,right:tile.b}];dgame.leftEnd=tile.a;dgame.rightEnd=tile.b}
-  else if(end==="left"){let other=tile.a===dgame.leftEnd?tile.b:tile.a;dgame.board.unshift({left:other,right:dgame.leftEnd});dgame.leftEnd=other}
-  else{let other=tile.a===dgame.rightEnd?tile.b:tile.a;dgame.board.push({left:dgame.rightEnd,right:other});dgame.rightEnd=other}
+  let tileKey=++dgTileKeySeq;
+  if(end==="lead"){dgame.board=[{left:tile.a,right:tile.b,_key:tileKey}];dgame.leftEnd=tile.a;dgame.rightEnd=tile.b}
+  else if(end==="left"){let other=tile.a===dgame.leftEnd?tile.b:tile.a;dgame.board.unshift({left:other,right:dgame.leftEnd,_key:tileKey});dgame.leftEnd=other}
+  else{let other=tile.a===dgame.rightEnd?tile.b:tile.a;dgame.board.push({left:dgame.rightEnd,right:other,_key:tileKey});dgame.rightEnd=other}
   dgame.log.push({seat,tile:{a:tile.a,b:tile.b},end,preLeftEnd,preRightEnd});
   dgame.passesInRow=0;
   dgAfterAction(seat,hand.length===0);
@@ -1747,7 +1787,7 @@ function dgRender(){
   else if(dgame.turn===0){turnLabel.textContent="Your turn — tap a tile";turnLabel.classList.add("you")}
   else{let names=["You","West","Partner","East"];turnLabel.textContent=names[dgame.turn]+" is thinking…";turnLabel.classList.remove("you")}
 
-  $("dgBoard").innerHTML=dgBoardHtml(dgame.board);
+  dgAnimateBoardUpdate($("dgBoard"),dgBoardHtml(dgame.board));
 
   let hand=dgame.hands[0];
   let legalPlays=(dgame.turn===0&&!dgame.over)?dgLegalPlaysForSeat(0):[];
@@ -1827,7 +1867,7 @@ function lgDealFirstHand(){
   hands.forEach(h=>h.sort((x,y)=>(x.a-y.a)||(x.b-y.b)));
   let starter=hands.findIndex(h=>h.some(t=>t.a===6&&t.b===6));
   let seats=liveGame.seats.map(s=>s.type==="open"?{type:"ai"}:s);
-  liveGame={status:"playing",seats,hands,board:[],leftEnd:null,rightEnd:null,turn:starter,starter,passesInRow:0,over:false,log:[],result:null,forceDoubleSixLead:true,moveSeq:(liveGame.moveSeq||0)+1,handCount:(liveGame.handCount||0)+1,lastAuto:null,turnDeadline:seats[starter].type==="human"?lgDeadline():null};
+  liveGame={status:"playing",seats,hands,board:[],leftEnd:null,rightEnd:null,turn:starter,starter,passesInRow:0,over:false,log:[],result:null,forceDoubleSixLead:true,moveSeq:(liveGame.moveSeq||0)+1,handCount:(liveGame.handCount||0)+1,lastAuto:null,turnDeadline:seats[starter].type==="human"?lgDeadline():null,tileKeySeq:0};
   lgPush();
 }
 function lgNextHand(){
@@ -1837,7 +1877,7 @@ function lgNextHand(){
   let set=shuffleArr(buildDominoSet()),hands=[[],[],[],[]];
   for(let i=0;i<28;i++)hands[i%4].push(set[i]);
   hands.forEach(h=>h.sort((x,y)=>(x.a-y.a)||(x.b-y.b)));
-  liveGame={status:"playing",seats:liveGame.seats,hands,board:[],leftEnd:null,rightEnd:null,turn:next,starter:next,passesInRow:0,over:false,log:[],result:null,forceDoubleSixLead:false,moveSeq:(liveGame.moveSeq||0)+1,handCount:(liveGame.handCount||0)+1,lastAuto:null,turnDeadline:liveGame.seats[next].type==="human"?lgDeadline():null};
+  liveGame={status:"playing",seats:liveGame.seats,hands,board:[],leftEnd:null,rightEnd:null,turn:next,starter:next,passesInRow:0,over:false,log:[],result:null,forceDoubleSixLead:false,moveSeq:(liveGame.moveSeq||0)+1,handCount:(liveGame.handCount||0)+1,lastAuto:null,turnDeadline:liveGame.seats[next].type==="human"?lgDeadline():null,tileKeySeq:0};
   lgPush();
 }
 function lgLegalPlays(seat){
@@ -1866,9 +1906,11 @@ function lgApplyPlay(seat,tile,end,auto){
   let preLeftEnd=liveGame.leftEnd,preRightEnd=liveGame.rightEnd;
   liveGame.lastAuto=auto?{seat,time:new Date().toISOString()}:null;
   hand.splice(idx,1);
-  if(end==="lead"){liveGame.board=[{left:tile.a,right:tile.b}];liveGame.leftEnd=tile.a;liveGame.rightEnd=tile.b}
-  else if(end==="left"){let other=tile.a===liveGame.leftEnd?tile.b:tile.a;liveGame.board.unshift({left:other,right:liveGame.leftEnd});liveGame.leftEnd=other}
-  else{let other=tile.a===liveGame.rightEnd?tile.b:tile.a;liveGame.board.push({left:liveGame.rightEnd,right:other});liveGame.rightEnd=other}
+  liveGame.tileKeySeq=(liveGame.tileKeySeq||0)+1;
+  let tileKey=liveGame.tileKeySeq;
+  if(end==="lead"){liveGame.board=[{left:tile.a,right:tile.b,_key:tileKey}];liveGame.leftEnd=tile.a;liveGame.rightEnd=tile.b}
+  else if(end==="left"){let other=tile.a===liveGame.leftEnd?tile.b:tile.a;liveGame.board.unshift({left:other,right:liveGame.leftEnd,_key:tileKey});liveGame.leftEnd=other}
+  else{let other=tile.a===liveGame.rightEnd?tile.b:tile.a;liveGame.board.push({left:liveGame.rightEnd,right:other,_key:tileKey});liveGame.rightEnd=other}
   liveGame.log.push({seat,tile:{a:tile.a,b:tile.b},end,preLeftEnd,preRightEnd});
   liveGame.passesInRow=0;
   liveGame.moveSeq=(liveGame.moveSeq||0)+1;
@@ -2032,7 +2074,7 @@ function lgRender(){
   else{let info=liveGame.seats[liveGame.turn],who=info.type==="human"?info.name:"The computer";turnLabel.innerHTML=escapeHtml(who)+' is thinking… <span class="lg-countdown"></span>';turnLabel.classList.remove("you")}
   lgUpdateCountdownDisplay();
 
-  $("lgBoard").innerHTML=dgBoardHtml(liveGame.board);
+  dgAnimateBoardUpdate($("lgBoard"),dgBoardHtml(liveGame.board));
 
   let isMyTurn=liveGame.status==="playing"&&lgMySeat!==null&&liveGame.turn===lgMySeat;
   let hand=lgMySeat!==null?liveGame.hands[lgMySeat]:[];
