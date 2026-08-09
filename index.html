@@ -13,30 +13,201 @@
   <link rel="apple-touch-icon" href="icons/icon-180.png" />
   <link rel="icon" href="icons/icon-192.png" />
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-    import { getDatabase, ref, set, update, push, remove, onValue, onDisconnect, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+    /* Shared sessions run on Supabase (Postgres + Realtime) instead of Firebase. The rest of
+       the app still talks to `window.FirebaseBridge` using a Firebase-Realtime-Database-shaped
+       API (ref/set/update/push/remove/onValue/onDisconnect/get/serverTimestamp) — that whole
+       surface, and the append-only-history sync model it supports, was already built and
+       tested, so this file only swaps the transport underneath it rather than rewriting every
+       call site. No auth: sessions are a "share the code and trust people" model, matching the
+       original design — the anon key below is meant to be public/client-side (Postgres RLS is
+       what actually gates access), so it's safe to commit. */
+    const SUPABASE_URL = "https://bbdzvammpdxlzjggfumt.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_IUD8JbsXZECXXJ_J-TYT7A_w7iMBqXU";
+    const enabled = !!SUPABASE_URL && !SUPABASE_URL.includes("YOUR_");
+    let sb = null, connectionOk = true, connectionListeners = [];
 
-    /* Fill these in with your own free Firebase project's config (Project settings > General >
-       Your apps > SDK setup and configuration) to turn on shared sessions. These values are
-       meant to be public/client-side for Firebase, so it's safe to commit them here. Until you
-       do, the app runs solo-only exactly as before. */
-    const firebaseConfig = {
-      apiKey: "YOUR_FIREBASE_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-      projectId: "YOUR_PROJECT",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
-    const enabled = !!firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith("YOUR_");
-    let db = null;
-    if (enabled) {
-      const app = initializeApp(firebaseConfig);
-      db = getDatabase(app);
+    const PUSH_TABLES = { history: "session_history", rounds: "session_rounds", gameTracker: "session_game_tracker", roster: "session_roster" };
+    const key = id => String(id).padStart(15, "0");
+
+    function bridgeRef(_db, path) { return { path }; }
+
+    async function fetchSessionTree(code) {
+      const [s, players, history, rounds, tracker, roster] = await Promise.all([
+        sb.from("sessions").select("*").eq("code", code).maybeSingle(),
+        sb.from("session_players").select("*").eq("session_code", code),
+        sb.from("session_history").select("*").eq("session_code", code).order("id", { ascending: true }),
+        sb.from("session_rounds").select("*").eq("session_code", code).order("id", { ascending: true }),
+        sb.from("session_game_tracker").select("*").eq("session_code", code).order("id", { ascending: true }),
+        sb.from("session_roster").select("*").eq("session_code", code).order("id", { ascending: true }),
+      ]);
+      if (!s.data) return null;
+      const row = s.data, val = {
+        meta: { createdAt: row.created_at, hostId: row.host_id, viewerCode: row.viewer_code },
+        settings: { selectedRuleSet: row.selected_rule_set, team1Name: row.team1_name, team2Name: row.team2_name, targetScore: row.target_score, premiosMode: row.premios_mode, specialsMode: row.specials_mode, gameStarted: row.game_started },
+        players: {}, history: {}, rounds: {}, gameTracker: {}, roster: {}
+      };
+      (players.data || []).forEach(p => { val.players[p.player_id] = { name: p.name, isHost: p.is_host, role: p.role, joinedAt: p.joined_at }; });
+      (history.data || []).forEach(h => { val.history[key(h.id)] = { team: h.team, teamName: h.team_name, points: h.points, reason: h.reason, detail: h.detail, premioIdx: h.premio_idx, time: h.time }; });
+      (rounds.data || []).forEach(r => { val.rounds[key(r.id)] = { entries: r.entries, time: r.time }; });
+      (tracker.data || []).forEach(g => { val.gameTracker[key(g.id)] = g.data; });
+      (roster.data || []).forEach(r => { val.roster[key(r.id)] = { name: r.name }; });
+      return val;
     }
-    window.FirebaseBridge = { enabled, db, ref, set, update, push, remove, onValue, onDisconnect, get, serverTimestamp };
-    window.dispatchEvent(new Event("firebase-ready"));
+
+    async function bridgeSet(ref, value) {
+      const p = ref.path.split("/");
+      if (p[0] === "sessions" && p.length === 2) {
+        const code = p[1], meta = value.meta || {}, settings = value.settings || {}, players = value.players || {};
+        const { error } = await sb.from("sessions").upsert({
+          code, host_id: meta.hostId, viewer_code: meta.viewerCode || null,
+          selected_rule_set: settings.selectedRuleSet || "puertoRican",
+          team1_name: settings.team1Name || "Team A", team2_name: settings.team2Name || "Team B",
+          target_score: String(settings.targetScore || "500"),
+          premios_mode: settings.premiosMode || "on", specials_mode: settings.specialsMode || "on",
+          game_started: !!settings.gameStarted
+        });
+        if (error) throw error;
+        const rows = Object.entries(players).map(([pid, pl]) => ({ session_code: code, player_id: pid, name: pl.name, is_host: !!pl.isHost, role: pl.role || "admin" }));
+        if (rows.length) { const r = await sb.from("session_players").upsert(rows); if (r.error) throw r.error; }
+        return;
+      }
+      if (p[0] === "sessions" && p.length === 4 && p[2] === "players") {
+        const { error } = await sb.from("session_players").upsert({ session_code: p[1], player_id: p[3], name: value.name, is_host: !!value.isHost, role: value.role || "admin", joined_at: new Date().toISOString() });
+        if (error) throw error;
+        return;
+      }
+      if (p[0] === "viewerCodes" && p.length === 2) {
+        const { error } = await sb.from("viewer_codes").upsert({ code: p[1], session_code: value.sessionCode });
+        if (error) throw error;
+        return;
+      }
+      throw new Error("Unsupported set path: " + ref.path);
+    }
+
+    async function bridgeUpdate(ref, value) {
+      const p = ref.path.split("/");
+      if (p[0] === "sessions" && p.length === 3 && p[2] === "settings") {
+        const patch = {};
+        if (value.selectedRuleSet !== undefined) patch.selected_rule_set = value.selectedRuleSet;
+        if (value.team1Name !== undefined) patch.team1_name = value.team1Name;
+        if (value.team2Name !== undefined) patch.team2_name = value.team2Name;
+        if (value.targetScore !== undefined) patch.target_score = String(value.targetScore);
+        if (value.premiosMode !== undefined) patch.premios_mode = value.premiosMode;
+        if (value.specialsMode !== undefined) patch.specials_mode = value.specialsMode;
+        if (value.gameStarted !== undefined) patch.game_started = !!value.gameStarted;
+        const { error } = await sb.from("sessions").update(patch).eq("code", p[1]);
+        if (error) throw error;
+        return;
+      }
+      throw new Error("Unsupported update path: " + ref.path);
+    }
+
+    async function bridgePush(ref, value) {
+      const p = ref.path.split("/");
+      if (p[0] === "sessions" && p.length === 3 && PUSH_TABLES[p[2]]) {
+        const code = p[1], table = PUSH_TABLES[p[2]], row = { session_code: code };
+        if (p[2] === "history") Object.assign(row, { team: value.team, team_name: value.teamName, points: value.points, reason: value.reason, detail: value.detail, premio_idx: value.premioIdx, time: value.time });
+        else if (p[2] === "rounds") Object.assign(row, { entries: value.entries, time: value.time });
+        else if (p[2] === "gameTracker") Object.assign(row, { data: value });
+        else if (p[2] === "roster") Object.assign(row, { name: value.name });
+        const { data, error } = await sb.from(table).insert(row).select("id").single();
+        if (error) throw error;
+        return { key: key(data.id) };
+      }
+      throw new Error("Unsupported push path: " + ref.path);
+    }
+
+    async function bridgeRemove(ref) {
+      const p = ref.path.split("/");
+      if (p[0] === "sessions" && p.length === 2) { const { error } = await sb.from("sessions").delete().eq("code", p[1]); if (error) throw error; return; }
+      if (p[0] === "sessions" && p.length === 4 && p[2] === "players") { const { error } = await sb.from("session_players").delete().eq("session_code", p[1]).eq("player_id", p[3]); if (error) throw error; return; }
+      if (p[0] === "sessions" && p.length === 3 && PUSH_TABLES[p[2]]) { const { error } = await sb.from(PUSH_TABLES[p[2]]).delete().eq("session_code", p[1]); if (error) throw error; return; }
+      if (p[0] === "sessions" && p.length === 4 && PUSH_TABLES[p[2]]) { const { error } = await sb.from(PUSH_TABLES[p[2]]).delete().eq("session_code", p[1]).eq("id", Number(p[3])); if (error) throw error; return; }
+      if (p[0] === "viewerCodes" && p.length === 2) { const { error } = await sb.from("viewer_codes").delete().eq("code", p[1]); if (error) throw error; return; }
+      throw new Error("Unsupported remove path: " + ref.path);
+    }
+
+    async function bridgeGet(ref) {
+      const p = ref.path.split("/");
+      if (p[0] === "sessions" && p.length === 3 && p[2] === "meta") {
+        const { data } = await sb.from("sessions").select("*").eq("code", p[1]).maybeSingle();
+        return { exists: () => !!data, val: () => data ? { createdAt: data.created_at, hostId: data.host_id, viewerCode: data.viewer_code } : null };
+      }
+      if (p[0] === "viewerCodes" && p.length === 2) {
+        const { data } = await sb.from("viewer_codes").select("*").eq("code", p[1]).maybeSingle();
+        return { exists: () => !!data, val: () => data ? { sessionCode: data.session_code } : null };
+      }
+      throw new Error("Unsupported get path: " + ref.path);
+    }
+
+    function bridgeOnValue(ref, callback) {
+      const p = ref.path.split("/");
+      if (p[0] === ".info" && p[1] === "connected") {
+        const fn = ok => callback({ val: () => ok, exists: () => true });
+        connectionListeners.push(fn);
+        fn(connectionOk);
+        return () => { connectionListeners = connectionListeners.filter(f => f !== fn); };
+      }
+      if (p[0] === "sessions" && p.length === 2) {
+        const code = p[1];
+        let cancelled = false;
+        async function push() {
+          if (cancelled) return;
+          const val = await fetchSessionTree(code).catch(() => null);
+          if (cancelled) return;
+          callback({ val: () => val, exists: () => val !== null });
+        }
+        push();
+        const channel = sb.channel("session:" + code)
+          .on("postgres_changes", { event: "*", schema: "public", table: "sessions", filter: `code=eq.${code}` }, push)
+          .on("postgres_changes", { event: "*", schema: "public", table: "session_players", filter: `session_code=eq.${code}` }, push)
+          .on("postgres_changes", { event: "*", schema: "public", table: "session_history", filter: `session_code=eq.${code}` }, push)
+          .on("postgres_changes", { event: "*", schema: "public", table: "session_rounds", filter: `session_code=eq.${code}` }, push)
+          .on("postgres_changes", { event: "*", schema: "public", table: "session_game_tracker", filter: `session_code=eq.${code}` }, push)
+          .on("postgres_changes", { event: "*", schema: "public", table: "session_roster", filter: `session_code=eq.${code}` }, push)
+          .subscribe();
+        return () => { cancelled = true; sb.removeChannel(channel); };
+      }
+      throw new Error("Unsupported onValue path: " + ref.path);
+    }
+
+    // Firebase's onDisconnect is a server-side feature with no direct Supabase equivalent from
+    // client code alone, so this is a best-effort approximation: fire a keepalive REST call on
+    // pagehide (covers closing the tab/app normally — the overwhelming majority of "leaves").
+    // It does NOT cover a hard crash or a killed network, unlike real Firebase onDisconnect.
+    function bridgeOnDisconnect(ref) {
+      return {
+        remove() {
+          const p = ref.path.split("/");
+          if (p[0] !== "sessions" || p.length !== 4 || p[2] !== "players") return;
+          const url = `${SUPABASE_URL}/rest/v1/session_players?session_code=eq.${encodeURIComponent(p[1])}&player_id=eq.${encodeURIComponent(p[3])}`;
+          const cleanup = () => { try { fetch(url, { method: "DELETE", keepalive: true, headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } }); } catch (e) {} };
+          window.addEventListener("pagehide", cleanup);
+        }
+      };
+    }
+
+    function bridgeServerTimestamp() { return new Date().toISOString(); }
+
+    // Dynamic import (not a static top-level one) so a CDN hiccup can't stop this script short
+    // before window.FirebaseBridge and the firebase-ready event ever get set up — solo mode,
+    // and every whenFirebaseReady() caller waiting on that event, need to keep working either way.
+    (async () => {
+      if (enabled) {
+        try {
+          const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+          sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+          sb.channel("heartbeat").subscribe(status => {
+            connectionOk = status === "SUBSCRIBED";
+            connectionListeners.forEach(fn => fn(connectionOk));
+          });
+        } catch (e) {
+          console.log(e);
+        }
+      }
+      window.FirebaseBridge = { enabled: enabled && !!sb, db: sb, ref: bridgeRef, set: bridgeSet, update: bridgeUpdate, push: bridgePush, remove: bridgeRemove, onValue: bridgeOnValue, onDisconnect: bridgeOnDisconnect, get: bridgeGet, serverTimestamp: bridgeServerTimestamp };
+      window.dispatchEvent(new Event("firebase-ready"));
+    })();
   </script>
   <style>
     :root{--red:#d71920;--blue:#0050a4;--dark:#002b5c;--gold:#f5c542;--green:#159957;--danger:#c62828;--muted:#657083;--text:#172033;--card:rgba(255,255,255,.96);--line:#d9e2ef;--disabled:#aab3c2;
@@ -349,7 +520,7 @@
       <h2 class="title">Play With Others</h2>
       <div class="small">Start a shared session so others can watch the score live on their own phone, or join in as players.</div>
       <div class="grid2" style="margin-top:10px"><button class="green" id="startSessionBtn" onclick="startSession()">Start Shared Session</button><button class="dark" id="joinSessionBtn" onclick="openJoinPrompt()">Join a Session</button></div>
-      <div class="small" id="sessionSetupHint" style="margin-top:8px;display:none">Shared sessions need a one-time setup by the app owner (a free Firebase project). Ask them to finish it, or keep playing solo on this device.</div>
+      <div class="small" id="sessionSetupHint" style="margin-top:8px;display:none">Shared sessions need a one-time setup by the app owner. Ask them to finish it, or keep playing solo on this device.</div>
     </div>
     <div class="hidden" id="sessionCardActive">
       <div class="setup-header"><h2 class="title">Shared Session</h2><span class="pill" id="sessionStatusPill">Live</span></div>
@@ -599,7 +770,7 @@ function undoTap(){tapPoints.pop();drawTapMarkers()}
 function resetTapCount(resetBase=true){tapPoints=[];if(resetBase)$("snapshot").baseImage=null;$("tapCount").textContent="0";$("suggestedCountBox").style.display="none";drawTapMarkers()}
 function useTapCount(){$("handPoints").value=tapPoints.length;window.scrollTo({top:$("handPoints").getBoundingClientRect().top+window.scrollY-120,behavior:"smooth"})}
 function autoCountPips(){let c=$("snapshot");if(!c.width||c.style.display==="none"){alert("Take a photo first.");return}let ctx=c.getContext("2d");if(!c.baseImage)c.baseImage=ctx.getImageData(0,0,c.width,c.height);let img=c.baseImage,w=img.width,h=img.height,maxSide=900,sc=Math.min(1,maxSide/Math.max(w,h)),sw=Math.round(w*sc),sh=Math.round(h*sc),oc=document.createElement("canvas");oc.width=w;oc.height=h;oc.getContext("2d").putImageData(img,0,0);let wc=document.createElement("canvas");wc.width=sw;wc.height=sh;let wx=wc.getContext("2d");wx.drawImage(oc,0,0,sw,sh);let data=wx.getImageData(0,0,sw,sh).data,pips=detectPips(data,sw,sh);tapPoints=pips.map(p=>({x:p.x/sc,y:p.y/sc}));drawTapMarkers();$("suggestedCount").textContent=tapPoints.length;$("suggestedCountBox").style.display="block";if(confirm("Suggested count is "+tapPoints.length+". Use this as Domino Points?"))$("handPoints").value=tapPoints.length}
-/* ---- Shared sessions: Firebase Realtime Database mirrors game state across devices.
+/* ---- Shared sessions: Supabase (Postgres + Realtime) mirrors game state across devices.
    Score-affecting actions are appended as history events (never mutated in place), so
    simultaneous writes from different players can never conflict; team totals and premios
    are always derived by summing that history on every update. ---- */
@@ -631,7 +802,7 @@ async function resolveJoinCode(rawCode){
 }
 
 async function startSession(){
-  if(!window.FirebaseBridge||!window.FirebaseBridge.enabled){alert("Ask the app owner to finish the one-time Firebase setup to enable shared sessions.");return}
+  if(!window.FirebaseBridge||!window.FirebaseBridge.enabled){alert("Ask the app owner to finish the one-time shared-sessions setup.");return}
   if(session.active)leaveSession(true);
   let name=prompt("Your name (shown to other players):",session.playerName||"Host");
   if(name===null)return;
@@ -646,7 +817,7 @@ async function startSession(){
   }catch(e){alert("Couldn't start a session: "+e.message)}
 }
 function openJoinPrompt(){
-  if(!window.FirebaseBridge||!window.FirebaseBridge.enabled){alert("Ask the app owner to finish the one-time Firebase setup to enable shared sessions.");return}
+  if(!window.FirebaseBridge||!window.FirebaseBridge.enabled){alert("Ask the app owner to finish the one-time shared-sessions setup.");return}
   let code=prompt("Enter the player code or viewer code:");
   if(!code)return;
   let name=prompt("Your name (shown to other players):","Player");
@@ -654,7 +825,7 @@ function openJoinPrompt(){
   joinSession(code,name.trim()||"Player");
 }
 async function joinSession(rawCode,name){
-  if(!window.FirebaseBridge||!window.FirebaseBridge.enabled){alert("Ask the app owner to finish the one-time Firebase setup to enable shared sessions.");return}
+  if(!window.FirebaseBridge||!window.FirebaseBridge.enabled){alert("Ask the app owner to finish the one-time shared-sessions setup.");return}
   if(session.active)leaveSession(true);
   try{
     let resolved=await resolveJoinCode(rawCode);
