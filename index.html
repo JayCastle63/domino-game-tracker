@@ -465,8 +465,16 @@
     .dg-mid{flex:1;display:flex;align-items:stretch;min-height:0;gap:5px;padding:1px}
     .dg-mid>.dg-seat{align-self:center}
     /* The recessed play panel: sunk into the wood with a brass bezel, exactly like the inset
-       tray on the physical table. Board tiles land on this instead of floating over a photo. */
-    .dg-board{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:10px;max-height:100%;
+       tray on the physical table. Board tiles land on this instead of floating over a photo.
+       Split into two layers: the outer .dg-board owns the border-radius/background/clip and
+       uses overflow:hidden (not auto) purely for clipping, while the inner .dg-board-scroll
+       does the actual scrolling. Combining border-radius with overflow:auto on one element is
+       enough to clip a normal box, but WebKit/Safari has a long-standing bug where it fails to
+       clip rotated (transform) descendants of a scrollable rounded box — exactly what the
+       played tiles are — so a snaking run of doubles near an edge visibly spills out past the
+       rounded corner onto the wood instead of scrolling out of view. Nesting a plain
+       overflow:hidden clip outside an overflow:auto scroller sidesteps that bug everywhere. */
+    .dg-board{flex:1;overflow:hidden;display:flex;max-height:100%;
       border-radius:10px;
       /* The play surface IS the El Morro artwork — assets/el-morro.jpg is that panel cropped
          out of the tray photo. Using the whole tray here meant rendering a picture of a table
@@ -483,6 +491,7 @@
         inset 0 0 0 1px rgba(214,178,92,.55),
         inset 0 5px 18px rgba(0,0,0,.55),inset 0 -3px 12px rgba(0,0,0,.4),
         0 1px 0 rgba(255,220,150,.22)}
+    .dg-board-scroll{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:10px;min-width:0}
     .dg-end-zone{border:3px dashed transparent;border-radius:10px;padding:2px;display:flex;align-items:center}
     .dg-end-zone.legal{border-color:var(--gold);animation:dgPulse 1s ease-in-out infinite}
     @keyframes dgPulse{0%,100%{box-shadow:0 0 0 0 rgba(245,197,66,.5)}50%{box-shadow:0 0 0 6px rgba(245,197,66,0)}}
@@ -858,7 +867,7 @@
   <div class="dg-oppRow"><div class="dg-seat" id="dgSeatNorth">Partner &bull; 7</div></div>
   <div class="dg-mid">
     <div class="dg-seat" id="dgSeatWest">West &bull; 7</div>
-    <div class="dg-board" id="dgBoard"></div>
+    <div class="dg-board" id="dgBoard"><div class="dg-board-scroll" id="dgBoardScroll"></div></div>
     <div class="dg-seat" id="dgSeatEast">East &bull; 7</div>
   </div>
   <div class="dg-turn" id="dgTurnLabel">Dealing&hellip;</div>
@@ -900,7 +909,7 @@
     <div class="dg-oppRow"><div class="dg-seat" id="lgSeatNorth">Partner &bull; 7</div></div>
     <div class="dg-mid">
       <div class="dg-seat" id="lgSeatWest">West &bull; 7</div>
-      <div class="dg-board" id="lgBoard"></div>
+      <div class="dg-board" id="lgBoard"><div class="dg-board-scroll" id="lgBoardScroll"></div></div>
       <div class="dg-seat" id="lgSeatEast">East &bull; 7</div>
     </div>
     <div class="dg-turn" id="lgTurnLabel">Dealing&hellip;</div>
@@ -1683,18 +1692,27 @@ function dgNoiseBuffer(ctx,seconds){
   for(let i=0;i<n;i++)data[i]=Math.random()*2-1;
   return buf;
 }
-function dgPlayKnockSound(){
-  if(dgPlaySample("knock",{gain:0.95,rate:0.95+Math.random()*0.1}))return;
-  let ctx=dgAudio();if(!ctx)return;
-  let t=ctx.currentTime;
+/* A single hit off the "knock" sample reads as just another tile clack (it's cut from the
+   same source video, at almost the same length) — nothing marked it out as the table-side
+   "no hay" knuckle-knock. Pitching it down further so it reads as a duller thud rather than a
+   bright click, and playing it twice — an actual knock-knock — is what actually sets it apart
+   from a played tile, in the sample and in the synthesized fallback alike. */
+function dgKnockHitAt(t){
+  if(dgPlaySample("knock",{gain:1,rate:0.62+Math.random()*0.08,when:t}))return;
+  let ctx=dgAudioCtx;if(!ctx)return;
   let osc=ctx.createOscillator(),gain=ctx.createGain();
-  osc.type="sine";osc.frequency.setValueAtTime(150,t);osc.frequency.exponentialRampToValueAtTime(60,t+0.09);
-  gain.gain.setValueAtTime(0.5,t);gain.gain.exponentialRampToValueAtTime(0.001,t+0.12);
-  osc.connect(gain);gain.connect(ctx.destination);osc.start(t);osc.stop(t+0.13);
+  osc.type="sine";osc.frequency.setValueAtTime(120,t);osc.frequency.exponentialRampToValueAtTime(45,t+0.11);
+  gain.gain.setValueAtTime(0.55,t);gain.gain.exponentialRampToValueAtTime(0.001,t+0.15);
+  osc.connect(gain);gain.connect(ctx.destination);osc.start(t);osc.stop(t+0.16);
   let noise=ctx.createBufferSource();noise.buffer=dgNoiseBuffer(ctx,0.05);
-  let filt=ctx.createBiquadFilter();filt.type="bandpass";filt.frequency.value=900;filt.Q.value=0.7;
-  let ngain=ctx.createGain();ngain.gain.setValueAtTime(0.25,t);ngain.gain.exponentialRampToValueAtTime(0.001,t+0.05);
+  let filt=ctx.createBiquadFilter();filt.type="bandpass";filt.frequency.value=500;filt.Q.value=0.6;
+  let ngain=ctx.createGain();ngain.gain.setValueAtTime(0.22,t);ngain.gain.exponentialRampToValueAtTime(0.001,t+0.05);
   noise.connect(filt);filt.connect(ngain);ngain.connect(ctx.destination);noise.start(t);
+}
+function dgPlayKnockSound(){
+  let ctx=dgAudio();if(!ctx)return;
+  dgKnockHitAt(ctx.currentTime);
+  dgKnockHitAt(ctx.currentTime+0.17);
 }
 function dgPlaySlamSound(){
   if(dgPlaySample("slam",{gain:1,rate:0.97+Math.random()*0.06}))return;
@@ -2016,7 +2034,7 @@ function dgAnimateDeal(overlay,token,onDone){
 function dgStartHandWithAnimation(dealFn){
   dgCancelShuffleAnimation();
   let overlay=$("dgShuffleOverlay");
-  $("dgBoard").innerHTML="";
+  $("dgBoardScroll").innerHTML="";
   $("dgHand").innerHTML="";
   $("dgTurnLabel").textContent="Shuffling…";
   $("dgTurnLabel").classList.remove("you");
@@ -2240,7 +2258,7 @@ function dgRender(){
   else if(dgame.turn===0){turnLabel.textContent="Your turn — tap a tile";turnLabel.classList.add("you")}
   else{let names=["You","West","Partner","East"];turnLabel.textContent=names[dgame.turn]+" is thinking…";turnLabel.classList.remove("you")}
 
-  dgAnimateBoardUpdate($("dgBoard"),dgBoardHtml(dgame.board));
+  dgAnimateBoardUpdate($("dgBoardScroll"),dgBoardHtml(dgame.board));
 
   let hand=dgame.hands[0];
   let legalPlays=(dgame.turn===0&&!dgame.over)?dgLegalPlaysForSeat(0):[];
@@ -2536,7 +2554,7 @@ function lgRender(){
   else{let info=liveGame.seats[liveGame.turn],who=info.type==="human"?info.name:"The computer";turnLabel.innerHTML=escapeHtml(who)+' is thinking… <span class="lg-countdown"></span>';turnLabel.classList.remove("you")}
   lgUpdateCountdownDisplay();
 
-  dgAnimateBoardUpdate($("lgBoard"),dgBoardHtml(liveGame.board));
+  dgAnimateBoardUpdate($("lgBoardScroll"),dgBoardHtml(liveGame.board));
 
   let isMyTurn=liveGame.status==="playing"&&lgMySeat!==null&&liveGame.turn===lgMySeat;
   let hand=lgMySeat!==null?liveGame.hands[lgMySeat]:[];
