@@ -1517,18 +1517,41 @@ function applyCategoryVisibility(){let cat=activeRule().category||"team";let isI
    Team 2, turn order 0->1->2->3 so partners never play consecutively, matching a real table.
    Finished hands feed straight into the normal addScore() pipeline, so premios/history/
    session-sync (when not in a shared session) all just work unmodified. ---- */
-/* Small synthesized sound-effects layer (Web Audio API oscillators/noise, no audio files) —
-   keeps the app a single self-contained HTML page. These are approximations (a thump, a
-   rattle, a click), not recordings, but they read fine for quick table cues. AudioContext
-   needs a user gesture before most browsers allow it to make sound, so it's created lazily
-   on first use rather than at page load, and resumed if the browser auto-suspended it. */
+/* Sound-effects layer: real recorded tile sounds (assets/sounds/*.mp3, tiny clips trimmed
+   from a domino sound-effects reel) played through the Web Audio API, with a synthesized
+   fallback (oscillators/noise, no file needed) for the rare case a clip fails to load — so
+   the game never goes silent on those cues even offline before the service worker has
+   cached them. AudioContext needs a user gesture before most browsers allow it to make
+   sound, so it's created lazily rather than at page load, and resumed if auto-suspended. */
 let dgAudioCtx=null;
 function dgAudio(){
   if(!dgAudioCtx){
     try{dgAudioCtx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return null}
+    dgLoadSounds();
   }
   if(dgAudioCtx.state==="suspended")dgAudioCtx.resume().catch(()=>{});
   return dgAudioCtx;
+}
+const DG_SOUND_FILES={knock:"assets/sounds/knock.mp3",slam:"assets/sounds/slam.mp3",clack1:"assets/sounds/clack1.mp3",clack2:"assets/sounds/clack2.mp3",clack3:"assets/sounds/clack3.mp3",clack4:"assets/sounds/clack4.mp3",clack5:"assets/sounds/clack5.mp3"};
+const DG_CLACK_KEYS=["clack1","clack2","clack3","clack4","clack5"];
+let dgSoundBuffers={};
+function dgLoadSounds(){
+  let ctx=dgAudioCtx;if(!ctx)return;
+  Object.entries(DG_SOUND_FILES).forEach(([key,url])=>{
+    if(dgSoundBuffers[key])return;
+    fetch(url).then(r=>r.arrayBuffer()).then(buf=>ctx.decodeAudioData(buf)).then(decoded=>{dgSoundBuffers[key]=decoded}).catch(()=>{});
+  });
+}
+function dgPlaySample(key,opts){
+  let ctx=dgAudio(),buf=ctx&&dgSoundBuffers[key];
+  if(!buf)return false;
+  opts=opts||{};
+  let src=ctx.createBufferSource();src.buffer=buf;
+  src.playbackRate.value=opts.rate!==undefined?opts.rate:1;
+  let gain=ctx.createGain();gain.gain.value=opts.gain!==undefined?opts.gain:1;
+  src.connect(gain);gain.connect(ctx.destination);
+  src.start(opts.when!==undefined?opts.when:ctx.currentTime);
+  return src;
 }
 function dgNoiseBuffer(ctx,seconds){
   let n=Math.max(1,Math.floor(ctx.sampleRate*seconds)),buf=ctx.createBuffer(1,n,ctx.sampleRate),data=buf.getChannelData(0);
@@ -1536,6 +1559,7 @@ function dgNoiseBuffer(ctx,seconds){
   return buf;
 }
 function dgPlayKnockSound(){
+  if(dgPlaySample("knock",{gain:0.95,rate:0.95+Math.random()*0.1}))return;
   let ctx=dgAudio();if(!ctx)return;
   let t=ctx.currentTime;
   let osc=ctx.createOscillator(),gain=ctx.createGain();
@@ -1548,6 +1572,7 @@ function dgPlayKnockSound(){
   noise.connect(filt);filt.connect(ngain);ngain.connect(ctx.destination);noise.start(t);
 }
 function dgPlaySlamSound(){
+  if(dgPlaySample("slam",{gain:1,rate:0.97+Math.random()*0.06}))return;
   let ctx=dgAudio();if(!ctx)return;
   let t=ctx.currentTime;
   let osc=ctx.createOscillator(),gain=ctx.createGain();
@@ -1559,11 +1584,10 @@ function dgPlaySlamSound(){
   let ngain=ctx.createGain();ngain.gain.setValueAtTime(0.4,t);ngain.gain.exponentialRampToValueAtTime(0.001,t+0.07);
   noise.connect(filt);filt.connect(ngain);ngain.connect(ctx.destination);noise.start(t);
 }
-function dgClackAt(ctx,t,gainScale){
+function dgClackAtSynth(ctx,t,gainScale){
   // One hard little collision — mostly a short filtered-noise transient (the "clack" body),
-  // plus a brief resonant tone about half the time (the bit of pitch you get off a harder
-  // edge-on-edge hit) — not a smooth hiss, so a run of these reads as tiles/glass knocking
-  // together rather than sand or rain.
+  // plus a brief resonant tone about half the time — used only when the real clips haven't
+  // finished loading yet, so the shuffle never falls back to silence.
   let nodes=[],freq=700+Math.random()*1300,amp=(0.16+Math.random()*0.2)*gainScale;
   let noise=ctx.createBufferSource();noise.buffer=dgNoiseBuffer(ctx,0.04);
   let filt=ctx.createBiquadFilter();filt.type="bandpass";filt.frequency.value=freq;filt.Q.value=2.2;
@@ -1579,6 +1603,14 @@ function dgClackAt(ctx,t,gainScale){
     osc.start(t);osc.stop(t+0.05);nodes.push(osc);
   }
   return nodes;
+}
+function dgClackAt(ctx,t,gainScale){
+  let key=DG_CLACK_KEYS[Math.floor(Math.random()*DG_CLACK_KEYS.length)],buf=dgSoundBuffers[key];
+  if(!buf)return dgClackAtSynth(ctx,t,gainScale);
+  let src=ctx.createBufferSource();src.buffer=buf;src.playbackRate.value=0.85+Math.random()*0.3;
+  let gain=ctx.createGain();gain.gain.value=(0.6+Math.random()*0.4)*gainScale;
+  src.connect(gain);gain.connect(ctx.destination);src.start(t);
+  return[src];
 }
 function dgPlayShuffleSound(durationSec){
   let ctx=dgAudio();if(!ctx)return{stop(){}};
@@ -1780,6 +1812,7 @@ function openDominoGame(){
   if(session.active){alert("Leave the shared session first — Play vs Computer is a solo local game.");return}
   $("dominoModal").classList.add("show");
   $("dgResult").classList.remove("show");
+  dgAudio();
   dgStartHandWithAnimation(dgDealFirstHand);
 }
 function closeDominoGame(){$("dominoModal").classList.remove("show");dgame=null;dgGeneration++;dgCancelShuffleAnimation()}
@@ -2121,6 +2154,7 @@ function lgOpenTable(){
   if(!window.FirebaseBridge||!window.FirebaseBridge.enabled){alert("Ask the app owner to finish the one-time shared-sessions setup.");return}
   $("liveGameModal").classList.add("show");
   lgMySeat=null;lgSelectedIdx=undefined;lgLastAutoShown=null;lgLastPassShown=null;
+  dgAudio();
   lgSubscribe();
 }
 function lgLeaveTable(){$("liveGameModal").classList.remove("show");lgUnsubscribeInternal();liveGame=null;lgMySeat=null}
