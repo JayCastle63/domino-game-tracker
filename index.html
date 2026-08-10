@@ -462,6 +462,10 @@
     .dg-turn .lg-countdown{display:block;font-size:.76rem;font-weight:700;opacity:.85;margin-top:2px}
     .lg-toast{position:absolute;left:50%;top:calc(8px + env(safe-area-inset-top));transform:translateX(-50%);background:rgba(0,0,0,.82);color:#fff;padding:10px 16px;border-radius:12px;font-weight:800;font-size:.82rem;box-shadow:0 6px 18px rgba(0,0,0,.4);z-index:6;opacity:0;pointer-events:none;transition:opacity .25s;max-width:88%;text-align:center}
     .lg-toast.show{opacity:1}
+    .dg-pass-bubble{position:fixed;z-index:10050;background:rgba(255,255,255,.96);color:#3b2800;font-weight:900;font-size:.8rem;padding:8px 13px;border-radius:14px;box-shadow:0 8px 20px rgba(0,0,0,.4);pointer-events:none;opacity:0;transform:translate(-50%,-60%) scale(.6);transition:opacity .18s ease,transform .22s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;text-align:center}
+    .dg-pass-bubble.show{opacity:1;transform:translate(-50%,-60%) scale(1)}
+    .dg-pass-bubble .knock{display:inline-block;animation:dgKnock .45s ease-in-out 2}
+    @keyframes dgKnock{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-2px) rotate(-10deg)}50%{transform:translateY(0) rotate(0)}75%{transform:translateY(-2px) rotate(10deg)}}
     .tg-champion-banner{text-align:center;background:linear-gradient(135deg,rgba(245,197,66,.88),rgba(255,242,178,.88));border:1px solid rgba(255,255,255,.6);color:#3b2800;font-weight:900;border-radius:18px;padding:15px;margin-top:11px;font-size:1.05rem;box-shadow:0 10px 26px rgba(0,0,0,.2)}
   </style>
 </head>
@@ -741,6 +745,8 @@
     </div>
   </div>
 </div>
+
+<div class="dg-pass-bubble" id="dgPassBubble"></div>
 
 <script>
 const RULE_SETS={
@@ -1380,6 +1386,68 @@ function applyCategoryVisibility(){let cat=activeRule().category||"team";let isI
    Team 2, turn order 0->1->2->3 so partners never play consecutively, matching a real table.
    Finished hands feed straight into the normal addScore() pipeline, so premios/history/
    session-sync (when not in a shared session) all just work unmodified. ---- */
+/* Small synthesized sound-effects layer (Web Audio API oscillators/noise, no audio files) —
+   keeps the app a single self-contained HTML page. These are approximations (a thump, a
+   rattle, a click), not recordings, but they read fine for quick table cues. AudioContext
+   needs a user gesture before most browsers allow it to make sound, so it's created lazily
+   on first use rather than at page load, and resumed if the browser auto-suspended it. */
+let dgAudioCtx=null;
+function dgAudio(){
+  if(!dgAudioCtx){
+    try{dgAudioCtx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return null}
+  }
+  if(dgAudioCtx.state==="suspended")dgAudioCtx.resume().catch(()=>{});
+  return dgAudioCtx;
+}
+function dgNoiseBuffer(ctx,seconds){
+  let n=Math.max(1,Math.floor(ctx.sampleRate*seconds)),buf=ctx.createBuffer(1,n,ctx.sampleRate),data=buf.getChannelData(0);
+  for(let i=0;i<n;i++)data[i]=Math.random()*2-1;
+  return buf;
+}
+function dgPlayKnockSound(){
+  let ctx=dgAudio();if(!ctx)return;
+  let t=ctx.currentTime;
+  let osc=ctx.createOscillator(),gain=ctx.createGain();
+  osc.type="sine";osc.frequency.setValueAtTime(150,t);osc.frequency.exponentialRampToValueAtTime(60,t+0.09);
+  gain.gain.setValueAtTime(0.5,t);gain.gain.exponentialRampToValueAtTime(0.001,t+0.12);
+  osc.connect(gain);gain.connect(ctx.destination);osc.start(t);osc.stop(t+0.13);
+  let noise=ctx.createBufferSource();noise.buffer=dgNoiseBuffer(ctx,0.05);
+  let filt=ctx.createBiquadFilter();filt.type="bandpass";filt.frequency.value=900;filt.Q.value=0.7;
+  let ngain=ctx.createGain();ngain.gain.setValueAtTime(0.25,t);ngain.gain.exponentialRampToValueAtTime(0.001,t+0.05);
+  noise.connect(filt);filt.connect(ngain);ngain.connect(ctx.destination);noise.start(t);
+}
+function dgPlaySlamSound(){
+  let ctx=dgAudio();if(!ctx)return;
+  let t=ctx.currentTime;
+  let osc=ctx.createOscillator(),gain=ctx.createGain();
+  osc.type="triangle";osc.frequency.setValueAtTime(220,t);osc.frequency.exponentialRampToValueAtTime(50,t+0.16);
+  gain.gain.setValueAtTime(0.7,t);gain.gain.exponentialRampToValueAtTime(0.001,t+0.22);
+  osc.connect(gain);gain.connect(ctx.destination);osc.start(t);osc.stop(t+0.24);
+  let noise=ctx.createBufferSource();noise.buffer=dgNoiseBuffer(ctx,0.08);
+  let filt=ctx.createBiquadFilter();filt.type="highpass";filt.frequency.value=1200;
+  let ngain=ctx.createGain();ngain.gain.setValueAtTime(0.4,t);ngain.gain.exponentialRampToValueAtTime(0.001,t+0.07);
+  noise.connect(filt);filt.connect(ngain);ngain.connect(ctx.destination);noise.start(t);
+}
+function dgPlayShuffleSound(durationSec){
+  let ctx=dgAudio();if(!ctx)return{stop(){}};
+  let t=ctx.currentTime,dur=Math.max(0.3,durationSec||8);
+  let noise=ctx.createBufferSource();noise.buffer=dgNoiseBuffer(ctx,dur);noise.loop=true;
+  let filt=ctx.createBiquadFilter();filt.type="bandpass";filt.frequency.value=1400;filt.Q.value=0.5;
+  let gain=ctx.createGain();gain.gain.setValueAtTime(0,t);
+  gain.gain.linearRampToValueAtTime(0.12,t+0.4);
+  gain.gain.setValueAtTime(0.12,t+Math.max(0.4,dur-0.6));
+  gain.gain.linearRampToValueAtTime(0,t+dur);
+  let lfo=ctx.createOscillator();lfo.frequency.value=14;
+  let lfoGain=ctx.createGain();lfoGain.gain.value=0.06;
+  lfo.connect(lfoGain);lfoGain.connect(gain.gain);
+  noise.connect(filt);filt.connect(gain);gain.connect(ctx.destination);
+  lfo.start(t);noise.start(t);noise.stop(t+dur);lfo.stop(t+dur);
+  return{stop(){
+    let now=ctx.currentTime;
+    try{gain.gain.cancelScheduledValues(now);gain.gain.setValueAtTime(gain.gain.value,now);gain.gain.linearRampToValueAtTime(0,now+0.15);noise.stop(now+0.16);lfo.stop(now+0.16)}catch(e){}
+  }};
+}
+
 let dgame=null;let dgGeneration=0;let dgHandCount=0;let dgTileKeySeq=0;
 const DG_PIP_POS={0:[],1:[[2,2]],2:[[1,1],[3,3]],3:[[1,1],[2,2],[3,3]],4:[[1,1],[1,3],[3,1],[3,3]],5:[[1,1],[1,3],[2,2],[3,1],[3,3]],6:[[1,1],[2,1],[3,1],[1,3],[2,3],[3,3]]};
 function buildDominoSet(){let s=[];for(let a=0;a<=6;a++)for(let b=a;b<=6;b++)s.push({a,b});return s}
@@ -1388,23 +1456,26 @@ function halfHtml(n){let dots=(DG_PIP_POS[n]||[]).map(([r,c])=>`<div class="dt-d
 function tileHtml(a,b,big){return `<div class="domino-tile${big?" lg":""}${a===b?" isdouble":""}">${halfHtml(a)}${halfHtml(b)}</div>`}
 function dgSeatHtml(label,count){let n=Math.min(count,7),fan="";for(let i=0;i<n;i++)fan+=`<span class="dg-back"></span>`;return `<div>${label} • ${count}</div><div class="dg-back-fan">${fan}</div>`}
 
-/* Lays the chain out the way it's actually played on a table: a straight run left to right,
+/* Lays a chain out the way it's actually played on a table: a straight run left to right,
    matching pips end to end, doubles turned crosswise. When a run hits the edge (6 tiles) the
    line turns and runs a short way (4 tiles) across, then heads back the other direction —
    a bracket shape, not a diagonal stair-step. A double's footprint along the line is its
    short side (it's turned sideways), so it steps forward less than a straight tile does —
-   that's what keeps every tile actually touching the next one instead of leaving a gap. */
+   that's what keeps every tile actually touching the next one instead of leaving a gap.
+   Starts at local origin (0,0) and always grows toward +x — dgBoardLayout below calls this
+   twice (once for each side of the opening tile) and mirrors one side, so the table's own
+   "salida" tile stays fixed at the middle instead of drifting as one side outgrows the other. */
 const DG_TILE_LEN=38,DG_TILE_WID=27,DG_TILE_GAP=3;
-function dgBoardLayout(board){
+function dgLayoutChain(tiles){
   const HORIZ_RUN=6,VERT_RUN=4;
   let x=0,y=0,goingRight=true,mode="horiz",count=0,placements=[];
-  for(let i=0;i<board.length;i++){
-    let t=board[i],isDouble=t.left===t.right,horizontal=mode==="horiz";
+  for(let i=0;i<tiles.length;i++){
+    let t=tiles[i],isDouble=t.left===t.right,horizontal=mode==="horiz";
     placements.push({tile:t,x,y,horizontal,isDouble,goingRight});
     let along=isDouble?DG_TILE_WID:DG_TILE_LEN;
     let nextAlong=along,nextCross=isDouble?DG_TILE_LEN:DG_TILE_WID;
-    if(i+1<board.length){
-      let nextDouble=board[i+1].left===board[i+1].right;
+    if(i+1<tiles.length){
+      let nextDouble=tiles[i+1].left===tiles[i+1].right;
       nextAlong=nextDouble?DG_TILE_WID:DG_TILE_LEN;
       nextCross=nextDouble?DG_TILE_LEN:DG_TILE_WID;
     }
@@ -1436,14 +1507,33 @@ function dgBoardLayout(board){
   }
   return placements;
 }
+function dgBoardLayout(board){
+  if(!board.length)return [];
+  let startIdx=board.findIndex(t=>t._key===1);
+  if(startIdx<0)startIdx=0;
+  // Right side (including the opening tile itself, at local origin) grows the normal way.
+  let rightSide=dgLayoutChain(board.slice(startIdx));
+  // Left side is laid out with the exact same "always grows toward +x" logic — a leftward
+  // chain is just a mirror image of a rightward one — then flipped into place: x negated,
+  // and goingRight inverted so a tile's pip-orientation still matches its true screen side.
+  let leftSide=dgLayoutChain(board.slice(0,startIdx+1).slice().reverse())
+    .slice(1)
+    .map(p=>({...p,x:-p.x,goingRight:!p.goingRight}))
+    .reverse();
+  return [...leftSide,...rightSide];
+}
 function dgBoardHtml(board){
   if(!board.length)return '<div class="small" style="color:#cfe3d5">Empty table — someone leads</div>';
   const PAD=16;
   let layout=dgBoardLayout(board);
   let xs=layout.map(p=>p.x),ys=layout.map(p=>p.y);
   let minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
-  let offX=-minX+DG_TILE_LEN/2+PAD,offY=-minY+DG_TILE_LEN/2+PAD;
-  let boardW=(maxX-minX)+DG_TILE_LEN+PAD*2,boardH=(maxY-minY)+DG_TILE_LEN+PAD*2;
+  // Padded symmetrically around x=0 (the opening tile's fixed position) rather than around
+  // the chain's actual bounding box, so the salida stays dead center even when one side has
+  // grown a lot further than the other — matching how it sits on a real table.
+  let halfSpan=Math.max(Math.abs(minX),Math.abs(maxX));
+  let offX=halfSpan+DG_TILE_LEN/2+PAD,offY=-minY+DG_TILE_LEN/2+PAD;
+  let boardW=halfSpan*2+DG_TILE_LEN+PAD*2,boardH=(maxY-minY)+DG_TILE_LEN+PAD*2;
   let tiles=layout.map(p=>{
     // Each tile's "left" value always faces the previous tile in the chain and "right" faces
     // the next one. Rotating 90° for a downward run correctly puts "left" on top — but a
@@ -1521,10 +1611,11 @@ function closeDominoGame(){$("dominoModal").classList.remove("show");dgame=null;
    (dealFn) only runs once the animation finishes or the player taps to skip it. Guards on
    the modal still being open (not dgGeneration) since dealFn itself bumps the generation as
    part of legitimately starting the new hand. ---- */
-let dgShuffleToken=null;
+let dgShuffleToken=null;let dgShuffleSound=null;
 function dgCancelShuffleAnimation(){
   if(dgShuffleToken){dgShuffleToken.cancelled=true;dgShuffleToken.timers.forEach(id=>clearTimeout(id))}
   dgShuffleToken=null;
+  if(dgShuffleSound){dgShuffleSound.stop();dgShuffleSound=null}
   let overlay=$("dgShuffleOverlay");
   overlay.classList.remove("show");
   overlay.onclick=null;
@@ -1597,10 +1688,13 @@ function dgStartHandWithAnimation(dealFn){
   overlay.classList.add("show");
   let token={cancelled:false,timers:[]};
   dgShuffleToken=token;
+  let mixMs=7000+Math.random()*3000;
+  dgShuffleSound=dgPlayShuffleSound(mixMs/1000);
   function finish(){
     if(token.cancelled)return;
     token.cancelled=true;
     token.timers.forEach(id=>clearTimeout(id));
+    if(dgShuffleSound){dgShuffleSound.stop();dgShuffleSound=null}
     overlay.classList.remove("show");
     overlay.onclick=null;
     overlay.innerHTML="";
@@ -1611,7 +1705,6 @@ function dgStartHandWithAnimation(dealFn){
   }
   overlay.onclick=finish;
   dgBuildMixingPile(overlay.querySelector(".dg-shuffle-pile"),22);
-  let mixMs=7000+Math.random()*3000;
   let id=setTimeout(()=>{
     if(token.cancelled)return;
     let label=overlay.querySelector(".dg-shuffle-label");
@@ -1667,7 +1760,27 @@ function dgPlayTile(seat,tile,end){
   dgame.passesInRow=0;
   dgAfterAction(seat,hand.length===0);
 }
-function dgPassTurn(seat){dgame.passesInRow++;dgame.log.push({seat,pass:true});dgAfterAction(seat,false)}
+function dgPassTurn(seat){dgame.passesInRow++;dgame.log.push({seat,pass:true});dgFlashPassBubble(dgSeatElFor(seat));dgAfterAction(seat,false)}
+/* Knocking on the table for "no hay" (no matching tile) is table-side custom for Puerto
+   Rican dominoes — a quick knuckle-knock instead of saying anything. One shared bubble
+   element (position:fixed, so it works the same whether it's anchored to the local table
+   or the online one) pops up over whichever seat passed and fades out on its own. */
+function dgSeatElFor(seat){return seat===0?$("dgHand"):seat===1?$("dgSeatWest"):seat===2?$("dgSeatNorth"):$("dgSeatEast")}
+let dgPassBubbleTimer=null;
+function dgFlashPassBubble(anchorEl){
+  let bubble=$("dgPassBubble");
+  if(!bubble||!anchorEl)return;
+  dgPlayKnockSound();
+  let r=anchorEl.getBoundingClientRect();
+  bubble.style.left=(r.left+r.width/2)+"px";
+  bubble.style.top=r.top+"px";
+  bubble.innerHTML='<span class="knock">&#x270A;</span> &iexcl;No hay! <span class="knock">&#x270A;</span>';
+  bubble.classList.remove("show");
+  void bubble.offsetWidth;
+  bubble.classList.add("show");
+  clearTimeout(dgPassBubbleTimer);
+  dgPassBubbleTimer=setTimeout(()=>bubble.classList.remove("show"),1400);
+}
 function dgAfterAction(seat,wentOut){
   if(wentOut){dgFinishHand({type:"domino",seat});return}
   if(dgame.passesInRow>=4){dgFinishHand({type:"block"});return}
@@ -1745,6 +1858,7 @@ function dgFinishHand(info){
     let el=tiles[slamIdx];
     if(el){
       el.classList.add("slam");
+      dgPlaySlamSound();
       let gen=dgGeneration;
       setTimeout(()=>{if(dgGeneration===gen&&$("dominoModal").classList.contains("show"))dgRenderResult()},650);
       return;
@@ -1820,7 +1934,7 @@ function dgRender(){
    real compare-and-swap concurrency control on top of an open, no-auth Postgres table. ---- */
 let liveGame=null;let lgUnsub=null;let lgMySeat=null;let lgSelectedIdx=undefined;
 let lgWatchdogInterval=null;let lgCountdownInterval=null;let lgScheduledMoveSeq=null;
-let lgLastAutoShown=null;let lgToastTimer=null;
+let lgLastAutoShown=null;let lgToastTimer=null;let lgLastPassShown=null;let lgLastSlamShown=null;
 function lgDeadline(){return new Date(Date.now()+60000).toISOString()}
 function lgDefaultDoc(){return {status:"setup",seats:[{type:"open"},{type:"open"},{type:"open"},{type:"open"}],moveSeq:0,handCount:0}}
 function lgOpenTable(){
@@ -1828,7 +1942,7 @@ function lgOpenTable(){
   if(state.selectedRuleSet!=="puertoRican"){alert("Online play is available for Puerto Rican dominoes right now.");return}
   if(!window.FirebaseBridge||!window.FirebaseBridge.enabled){alert("Ask the app owner to finish the one-time shared-sessions setup.");return}
   $("liveGameModal").classList.add("show");
-  lgMySeat=null;lgSelectedIdx=undefined;lgLastAutoShown=null;
+  lgMySeat=null;lgSelectedIdx=undefined;lgLastAutoShown=null;lgLastPassShown=null;
   lgSubscribe();
 }
 function lgLeaveTable(){$("liveGameModal").classList.remove("show");lgUnsubscribeInternal();liveGame=null;lgMySeat=null}
@@ -1918,10 +2032,18 @@ function lgApplyPlay(seat,tile,end,auto){
 }
 function lgApplyPass(seat,auto){
   liveGame.lastAuto=auto?{seat,time:new Date().toISOString()}:null;
+  liveGame.lastPass={seat,time:new Date().toISOString()};
   liveGame.passesInRow=(liveGame.passesInRow||0)+1;
   liveGame.log.push({seat,pass:true});
   liveGame.moveSeq=(liveGame.moveSeq||0)+1;
   lgAfterAction(seat,false);
+}
+function lgSeatElFor(seat){
+  let viewer=lgMySeat!==null?lgMySeat:0;
+  if(seat===viewer)return $("lgHand");
+  if(seat===(viewer+1)%4)return $("lgSeatWest");
+  if(seat===(viewer+2)%4)return $("lgSeatNorth");
+  return $("lgSeatEast");
 }
 function lgAfterAction(seat,wentOut){
   if(wentOut){lgFinishHand({type:"domino",seat});return}
@@ -2095,12 +2217,33 @@ function lgRender(){
     $("lgPlayLeftBtn").style.display="none";$("lgPlayRightBtn").style.display="none";
   }
 
-  if(liveGame.status==="handOver")lgRenderResult();else $("lgResult").classList.remove("show");
+  if(liveGame.status==="handOver"){
+    // Same slam-before-reveal beat as the local table: give the winning tile a moment before
+    // the result card covers the board, but only once per hand-end (lgRender fires on every
+    // realtime update, and every connected viewer needs to see this, not just whoever's move
+    // ended the hand — so the "already shown" guard is keyed off moveSeq, not a local flag).
+    let r=liveGame.result,lastLog=liveGame.log[liveGame.log.length-1];
+    if(r&&(r.capicu||r.chuchazo)&&lastLog&&lgLastSlamShown!==liveGame.moveSeq){
+      lgLastSlamShown=liveGame.moveSeq;
+      let slamIdx=lastLog.end==="left"?0:liveGame.board.length-1;
+      let el=$("lgBoard").querySelectorAll(".domino-tile")[slamIdx];
+      if(el){
+        el.classList.add("slam");
+        dgPlaySlamSound();
+        let seq=liveGame.moveSeq;
+        setTimeout(()=>{if(liveGame&&liveGame.moveSeq===seq&&$("liveGameModal").classList.contains("show"))lgRenderResult()},650);
+      }else lgRenderResult();
+    }else lgRenderResult();
+  }else $("lgResult").classList.remove("show");
 
   if(liveGame.lastAuto&&liveGame.lastAuto.time!==lgLastAutoShown){
     lgLastAutoShown=liveGame.lastAuto.time;
     let info=liveGame.seats[liveGame.lastAuto.seat],name=liveGame.lastAuto.seat===lgMySeat?"Your":escapeHtml((info&&info.name)||"Their");
     lgShowToast(name+" 60 seconds ran out — played automatically.");
+  }
+  if(liveGame.lastPass&&liveGame.lastPass.time!==lgLastPassShown){
+    lgLastPassShown=liveGame.lastPass.time;
+    dgFlashPassBubble(lgSeatElFor(liveGame.lastPass.seat));
   }
 }
 
