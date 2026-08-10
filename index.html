@@ -377,34 +377,88 @@
        button on every tab — underneath the bar. */
     @media(max-width:560px){body{padding:calc(18px + env(safe-area-inset-top)) 8px calc(110px + env(safe-area-inset-bottom))}.card{padding:12px}h1{font-size:1.18rem}.score{font-size:2.35rem}.grid2{grid-template-columns:1fr}.scoreboard{gap:8px}button{font-size:.9rem;padding:12px 8px}.icon-grid{grid-template-columns:repeat(4,1fr)!important}.region-grid{grid-template-columns:1fr 1fr}.team{padding:10px}.teamName{font-size:.86rem}}
 
-    /* ---- Interactive Puerto Rican domino table (play vs. computer) ---- */
-    .domino-modal{position:fixed;inset:0;z-index:10001;display:none;flex-direction:column;background-image:linear-gradient(rgba(4,20,10,.72),rgba(4,20,10,.76)),url('assets/table-tray.jpg');background-size:cover;background-position:center;background-repeat:no-repeat;padding:calc(8px + env(safe-area-inset-top)) 6px calc(8px + env(safe-area-inset-bottom));overflow:hidden}
+    /* ---- Interactive Puerto Rican domino table (play vs. computer) ----
+       Built to feel like the carved mahogany domino trays you'd buy on the island: a wood
+       surface with brass trim, a recessed playing panel inset into it, and brass racks the
+       tiles actually stand in. The wood is CSS rather than the photo so it fills any screen
+       shape — the photo is landscape and cropped to a meaningless sliver on a portrait
+       phone, so it's used inside the recessed panel where its aspect ratio still works. */
+    .domino-modal{
+      --wood-hi:#9a5c2c;--wood:#7a4520;--wood-lo:#54290f;--brass:#d8b25c;--brass-mid:#b08a30;--brass-lo:#7d611f;
+      position:fixed;inset:0;z-index:10001;display:none;flex-direction:column;
+      background:
+        repeating-linear-gradient(93deg,rgba(255,245,225,.045) 0 1px,transparent 1px 6px),
+        repeating-linear-gradient(88deg,rgba(0,0,0,.06) 0 1px,transparent 1px 11px),
+        radial-gradient(ellipse at 50% 38%,rgba(255,214,150,.13),transparent 62%),
+        linear-gradient(163deg,var(--wood-hi) 0%,var(--wood) 30%,var(--wood-lo) 74%,#3d1d0a 100%);
+      padding:calc(8px + env(safe-area-inset-top)) 6px calc(8px + env(safe-area-inset-bottom));overflow:hidden}
     .domino-modal.show{display:flex}
     .dg-topbar{display:flex;align-items:center;justify-content:space-between;color:#fff;padding:2px 4px 6px;flex:none}
     .dg-topbar h2{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);margin:0;font-size:1rem}
-    .dg-close{background:rgba(255,255,255,.3);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);border:1px solid rgba(255,255,255,.4);color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);padding:8px 12px;font-size:.8rem}
+    .dg-close{background:linear-gradient(180deg,rgba(255,236,190,.2),rgba(0,0,0,.3));border:1px solid rgba(255,222,160,.4);color:#ffeccb;text-shadow:0 1px 3px rgba(0,0,0,.7);padding:8px 12px;font-size:.8rem;box-shadow:inset 0 1px 0 rgba(255,240,200,.3)}
     .dg-scoreline{display:flex;align-items:center;justify-content:center;gap:10px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);font-weight:800;font-size:.8rem;padding:0 4px 4px;flex:none;flex-wrap:wrap}
-    .dg-scoreline .dg-score-team{background:rgba(255,255,255,.28);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:4px 10px}
-    .dg-scoreline .dg-score-team b{color:var(--gold);font-size:.95rem;margin-left:4px}
+    /* Brass score plates, like the engraved rails set into the real table. */
+    .dg-scoreline .dg-score-team{background:linear-gradient(180deg,rgba(255,236,190,.22),rgba(0,0,0,.26));border:1px solid rgba(255,222,160,.35);border-radius:8px;padding:4px 10px;box-shadow:inset 0 1px 0 rgba(255,240,200,.35)}
+    .dg-scoreline .dg-score-team b{color:#ffd464;font-size:.95rem;margin-left:4px}
     .dg-scoreline .dg-hand-count{opacity:.92}
     .dg-turn{text-align:center;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);font-weight:900;font-size:.88rem;padding:2px 4px 6px;flex:none;min-height:1.2em}
     .dg-turn.you{color:var(--gold)}
     .dg-oppRow{display:flex;justify-content:center;gap:10px;flex:none;padding:2px}
-    .dg-seat{background:rgba(255,255,255,.3);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);border:1px solid rgba(255,255,255,.4);border-radius:12px;padding:5px 8px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);font-size:.74rem;font-weight:800;text-align:center;white-space:nowrap;display:flex;flex-direction:column;align-items:center;gap:3px}
-    .dg-seat.turn{background:var(--gold);color:#3b2800}
-    .dg-back-fan{display:flex}
-    .dg-back{width:11px;height:16px;background:url('assets/coqui-back.jpg') 50% 46%/280% no-repeat;border:1.5px solid var(--gold);border-radius:3px;box-shadow:0 2px 0 rgba(0,0,0,.35);flex:none}
-    .dg-back+.dg-back{margin-left:-6px}
-    .dg-mid{flex:1;display:flex;align-items:center;min-height:0}
-    .dg-board{flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:6px;max-height:100%}
+    /* Opponent seats read as a rack of tiles standing on edge — you see the narrow top edge
+       of each tile and a count, the way you actually see someone's hand across the table. */
+    .dg-seat{background:linear-gradient(180deg,rgba(255,236,200,.16),rgba(0,0,0,.22));border:1px solid rgba(255,225,170,.28);border-radius:9px;padding:4px 7px 5px;color:#ffeccb;text-shadow:0 1px 3px rgba(0,0,0,.75);font-size:.68rem;font-weight:800;text-align:center;white-space:nowrap;display:flex;flex-direction:column;align-items:center;gap:3px;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+    .dg-seat.turn{background:linear-gradient(180deg,rgba(255,206,92,.95),rgba(206,150,32,.95));color:#3b2800;text-shadow:none;border-color:#ffe9b0;box-shadow:0 0 12px rgba(255,196,64,.55),0 2px 6px rgba(0,0,0,.4)}
+    .dg-back-fan{display:flex;align-items:flex-end;gap:1px;padding:2px 5px 3px;border-radius:3px;
+      background:linear-gradient(180deg,var(--brass) 0%,var(--brass-mid) 46%,var(--brass-lo) 100%);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(0,0,0,.3),0 2px 4px rgba(0,0,0,.45)}
+    .dg-back{width:6px;height:17px;flex:none;border:1px solid #23201b;border-bottom:0;border-radius:2px 2px 0 0;
+      background:linear-gradient(180deg,#fffdf4 0%,#f6efdc 34%,#cfc4a9 100%);
+      box-shadow:inset -1px 0 0 rgba(0,0,0,.18),0 -1px 2px rgba(0,0,0,.25)}
+    /* stretch (not center) so the recessed panel fills the table's full height; the side
+       racks re-center themselves individually so they don't stretch with it. */
+    .dg-mid{flex:1;display:flex;align-items:stretch;min-height:0;gap:5px;padding:1px}
+    .dg-mid>.dg-seat{align-self:center}
+    /* The recessed play panel: sunk into the wood with a brass bezel, exactly like the inset
+       tray on the physical table. Board tiles land on this instead of floating over a photo. */
+    .dg-board{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:10px;max-height:100%;
+      border-radius:10px;
+      /* Felt playing surface inset into the wood, framed the way the real tray is: a gold
+         hairline, then the deep blue scroll band, then brass. The El Morro photo rides
+         underneath at low opacity so it reads as printed-into-the-felt texture rather than
+         a picture competing with the tiles (cropped to portrait it was unreadable as art). */
+      border:2px solid var(--brass-lo);
+      outline:3px solid #16305e;outline-offset:-6px;
+      background:
+        linear-gradient(rgba(18,54,34,.90),rgba(10,38,24,.94)),
+        url('assets/table-tray.jpg') center/cover no-repeat,
+        radial-gradient(ellipse at 50% 42%,#1d5c3a,#123d26 70%,#0c2a1b);
+      box-shadow:
+        inset 0 0 0 1px rgba(214,178,92,.5),
+        inset 0 6px 20px rgba(0,0,0,.6),inset 0 -3px 12px rgba(0,0,0,.45),
+        0 1px 0 rgba(255,220,150,.22)}
     .dg-end-zone{border:3px dashed transparent;border-radius:10px;padding:2px;display:flex;align-items:center}
     .dg-end-zone.legal{border-color:var(--gold);animation:dgPulse 1s ease-in-out infinite}
     @keyframes dgPulse{0%,100%{box-shadow:0 0 0 0 rgba(245,197,66,.5)}50%{box-shadow:0 0 0 6px rgba(245,197,66,0)}}
-    .dg-hand{flex:none;display:flex;justify-content:center;gap:6px;flex-wrap:wrap;padding:8px 4px calc(4px + env(safe-area-inset-bottom));min-height:56px}
-    .domino-tile{background:#fdfaf3;border:2px solid #1a1a1a;border-radius:6px;display:flex;flex-direction:row;box-shadow:0 2px 0 rgba(0,0,0,.35);cursor:pointer;transition:.15s;flex:none}
+    /* Your own hand sits in a brass rack on the near edge of the table, tiles standing up
+       facing you — bigger than the board tiles because this is the thing you actually read
+       and tap. nowrap + scroll keeps it one clean row instead of wrapping to two. */
+    .dg-hand{flex:none;display:flex;justify-content:center;align-items:flex-end;gap:4px;flex-wrap:nowrap;overflow-x:auto;overflow-y:visible;
+      padding:9px 8px calc(7px + env(safe-area-inset-bottom));min-height:64px;margin-top:4px;border-radius:8px 8px 0 0;
+      background:linear-gradient(180deg,rgba(255,232,180,.14),rgba(0,0,0,.28));
+      border-top:2px solid var(--brass-mid);
+      box-shadow:inset 0 2px 0 rgba(255,238,196,.35),inset 0 -8px 18px rgba(0,0,0,.45)}
+    .dg-hand::-webkit-scrollbar{height:0}
+    .domino-tile{background:linear-gradient(158deg,#fffefb 0%,#faf5e9 52%,#e9e0cc 100%);border:2px solid #1a1a1a;border-radius:6px;display:flex;flex-direction:row;box-shadow:0 2px 0 rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.9);cursor:pointer;transition:.15s;flex:none}
     .domino-tile .dt-half{width:19px;height:27px;border-right:2px solid #1a1a1a;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:2px}
     .domino-tile .dt-half:last-child{border-right:0}
+    /* Hand tiles are noticeably bigger than board tiles and lifted off the rack with a
+       drop shadow so they read as standing up in front of you. */
+    .dg-hand .domino-tile{background:linear-gradient(158deg,#fffefc 0%,#fdfaf2 60%,#f4eede 100%);box-shadow:0 4px 7px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.95)}
     .domino-tile.lg .dt-half{width:29px;height:41px;padding:3px}
+    /* 44px halves (+2px borders = 48px tiles) is the largest size where a full 7-tile hand
+       still fits a 390px screen without scrolling: 7*48 + 6*4 gaps = 360 <= 362 available. */
+    .dg-hand .domino-tile.lg.vertical .dt-half{width:44px;height:32px;padding:4px}
+    .dg-hand .domino-tile.lg .dt-dot{width:7px;height:7px}
     .domino-tile.vertical{flex-direction:column}
     .domino-tile.vertical .dt-half{border-right:0;border-bottom:2px solid #1a1a1a}
     .domino-tile.vertical .dt-half:last-child{border-bottom:0}
@@ -412,7 +466,12 @@
     .dt-dot{width:4px;height:4px;border-radius:50%;background:#17253c;align-self:center;justify-self:center}
     .domino-tile.lg .dt-dot{width:6px;height:6px}
     .domino-tile.selected{transform:translateY(-9px);box-shadow:0 6px 14px rgba(245,197,66,.7);border-color:var(--gold)}
-    .domino-tile.disabled{opacity:.4;cursor:default}
+    /* Unplayable tiles stay OPAQUE and just go dull — you still need to read your own hand
+       to plan. The old opacity:.4 let the table show through, which was survivable over a
+       dark photo but turns tiles to mud over wood grain. */
+    .domino-tile.disabled{background:linear-gradient(158deg,#d6d0c4 0%,#c8c1b2 60%,#b6ae9d 100%);border-color:#4f4a42;box-shadow:0 2px 4px rgba(0,0,0,.4);cursor:default}
+    .domino-tile.disabled .dt-dot{background:#6a6459}
+    .dg-hand .domino-tile.disabled{box-shadow:0 3px 5px rgba(0,0,0,.45)}
     .domino-tile.isdouble{border-color:var(--gold)}
     .dg-actions{flex:none;display:flex;justify-content:center;gap:10px;padding:4px 0 2px}
     .dg-actions button{padding:11px 18px;font-size:.85rem}
@@ -1501,7 +1560,10 @@ function buildDominoSet(){let s=[];for(let a=0;a<=6;a++)for(let b=a;b<=6;b++)s.p
 function shuffleArr(arr){for(let i=arr.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
 function halfHtml(n){let dots=(DG_PIP_POS[n]||[]).map(([r,c])=>`<div class="dt-dot" style="grid-row:${r};grid-column:${c}"></div>`).join("");return `<div class="dt-half">${dots}</div>`}
 function tileHtml(a,b,big){return `<div class="domino-tile${big?" lg":""}${a===b?" isdouble":""}">${halfHtml(a)}${halfHtml(b)}</div>`}
-function dgSeatHtml(label,count){let n=Math.min(count,7),fan="";for(let i=0;i<n;i++)fan+=`<span class="dg-back"></span>`;return `<div>${label} • ${count}</div><div class="dg-back-fan">${fan}</div>`}
+/* One standing tile per tile actually held, so the rack visibly empties as they play — the
+   count is the reliable read, the rack is the at-a-glance one. An empty rack still renders
+   (as a bare rail) rather than vanishing, so the seat doesn't jump around as it empties. */
+function dgSeatHtml(label,count){let n=Math.max(0,Math.min(count,7)),fan="";for(let i=0;i<n;i++)fan+=`<span class="dg-back"></span>`;return `<div>${label} &bull; ${count}</div><div class="dg-back-fan">${fan}</div>`}
 
 /* Lays a chain out the way it's actually played on a table: a straight run left to right,
    matching pips end to end, doubles turned crosswise. When a run hits the edge (6 tiles) the
