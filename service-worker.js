@@ -1,4 +1,4 @@
-const CACHE_NAME = "domino-boricua-v21";
+const CACHE_NAME = "domino-boricua-v22";
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
@@ -7,6 +7,7 @@ const FILES_TO_CACHE = [
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./assets/table-tray.jpg",
+  "./assets/el-morro.jpg",
   "./assets/coqui-back.jpg"
 ];
 
