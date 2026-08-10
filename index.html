@@ -302,6 +302,17 @@
     .welcome-name-box label{margin-bottom:6px}
     .welcome-step-title{font-weight:900;color:var(--dark);font-size:.95rem;margin:16px 0 2px}
 
+    /* ---- Ad placements: fully inert (display:none, no network requests) unless dgAdsInit()
+       finds ADS_ENABLED=true and a real slot id in AD_CONFIG — see the JS block near the top
+       of <script>. Never shows anything, and never adds delay, until real credentials exist. */
+    .ad-slot{display:none}
+    .ad-slot.ad-active{display:flex}
+    .dg-shuffle-ad{position:absolute;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:6;width:min(320px,84vw);min-height:50px;max-height:90px;align-items:center;justify-content:center;overflow:hidden;background:rgba(255,255,255,.92);border-radius:12px;box-shadow:0 6px 16px rgba(0,0,0,.3)}
+    .ad-rail{position:fixed;top:50%;transform:translateY(-50%);width:160px;min-height:400px;max-height:80vh;z-index:50;align-items:center;justify-content:center;background:rgba(255,255,255,.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:14px;box-shadow:0 8px 20px rgba(0,0,0,.18);overflow:hidden}
+    .ad-rail-left{left:14px}
+    .ad-rail-right{right:14px}
+    @media(max-width:1180px){.ad-rail{display:none!important}}
+
     .app.app-hidden{
       display:none;
     }
@@ -864,6 +875,7 @@
     </div>
   </div>
   <div class="dg-shuffle-overlay" id="dgShuffleOverlay"></div>
+  <div class="dg-shuffle-ad ad-slot" id="dgShuffleAd"></div>
 </div>
 
 <div class="domino-modal" id="liveGameModal">
@@ -910,6 +922,9 @@
 
 <div class="dg-pass-bubble" id="dgPassBubble"></div>
 
+<div class="ad-rail ad-rail-left ad-slot" id="adRailLeft"></div>
+<div class="ad-rail ad-rail-right ad-slot" id="adRailRight"></div>
+
 <script>
 const RULE_SETS={
   puertoRican:{id:"puertoRican",name:"Puerto Rican",flagHtml:"&#x1F1F5;&#x1F1F7;",supported:true,category:"team",defaultTarget:500,targetOptions:[500,200],premios:[100,75,50,25],bonuses:[["none","None",0],["chuchazo","Chuchazo",100],["capicu","Capic&uacute;",100],["dominao","Dominao",0],["trancado","Trancado / Tranque",0],["custom","Custom",0]],summary:"Double-six, 2 teams, higher score wins, premios, Chuchazo, and Capic&uacute;. Play to 500 with premios, or 200 for a straight game with no premios."},
@@ -923,6 +938,45 @@ const RULE_SETS={
 };
 let premios=[100,75,50,25];let tapPoints=[];let stream=null;let liveActive=false,liveTimer=null,lastLiveCount=0,liveWorkCanvas=null,tallyTotal=0,tallySweeps=0;let state={team1Score:0,team2Score:0,premioUsed:[false,false,false,false],history:[],gameTracker:[],gameStarted:false,celebrationDismissed:false,setupOpen:false,selectedRuleSet:"puertoRican",regionConfirmed:false,playersList:[],players:[],rounds:[]};
 let session={active:false,code:null,isHost:false,role:"admin",viewerCode:null,playerId:null,playerName:null};let sessionUnsub=null;let lastAppliedSessionRuleSet=null;let settingsPushTimer=null;
+
+/* ---- Ads: OFF by default. Flip ADS_ENABLED to true and fill in AD_CONFIG with a real
+   AdSense publisher id + ad-unit slot ids to turn placements on — until then no ad script
+   is ever loaded and no .ad-slot ever becomes visible, so this ships inert for every user. */
+const ADS_ENABLED=false;
+const AD_CONFIG={publisherId:"",shuffleSlotId:"",railLeftSlotId:"",railRightSlotId:""};
+let dgAdsScriptLoaded=false;
+function dgAdLoadScript(){
+  if(dgAdsScriptLoaded)return;
+  dgAdsScriptLoaded=true;
+  let s=document.createElement("script");
+  s.async=true;
+  s.src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client="+encodeURIComponent(AD_CONFIG.publisherId);
+  s.crossOrigin="anonymous";
+  document.head.appendChild(s);
+}
+function dgAdFill(el,slotId){
+  if(!el||!slotId)return;
+  el.innerHTML='<ins class="adsbygoogle" style="display:block;width:100%;height:100%" data-ad-client="'+escapeHtml(AD_CONFIG.publisherId)+'" data-ad-slot="'+escapeHtml(slotId)+'" data-full-width-responsive="true"></ins>';
+  el.classList.add("ad-active");
+  try{(window.adsbygoogle=window.adsbygoogle||[]).push({})}catch(e){}
+}
+function dgAdsInitRails(){
+  if(!ADS_ENABLED||!AD_CONFIG.publisherId)return;
+  dgAdLoadScript();
+  dgAdFill($("adRailLeft"),AD_CONFIG.railLeftSlotId);
+  dgAdFill($("adRailRight"),AD_CONFIG.railRightSlotId);
+}
+function dgAdShowShuffle(){
+  if(!ADS_ENABLED||!AD_CONFIG.publisherId||!AD_CONFIG.shuffleSlotId)return;
+  dgAdLoadScript();
+  dgAdFill($("dgShuffleAd"),AD_CONFIG.shuffleSlotId);
+}
+function dgAdHideShuffle(){
+  let el=$("dgShuffleAd");
+  if(!el)return;
+  el.classList.remove("ad-active");
+  el.innerHTML="";
+}
 let profile=null;
 function loadProfile(){try{profile=JSON.parse(localStorage.getItem("prDominoProfileV1")||"null")}catch(e){profile=null}}
 function saveProfile(name,defaultRuleSet){profile={name,defaultRuleSet,createdAt:profile&&profile.createdAt||new Date().toISOString()};localStorage.setItem("prDominoProfileV1",JSON.stringify(profile))}
@@ -1899,6 +1953,7 @@ function dgCancelShuffleAnimation(){
   overlay.classList.remove("show");
   overlay.onclick=null;
   overlay.innerHTML="";
+  dgAdHideShuffle();
 }
 function dgBuildMixingPile(container,count){
   container.querySelectorAll(".dg-shuffle-tile").forEach(el=>el.remove());
@@ -1965,6 +2020,7 @@ function dgStartHandWithAnimation(dealFn){
   ["dgSeatNorth","dgSeatWest","dgSeatEast"].forEach(id=>{let el=$(id);el.classList.remove("turn");el.innerHTML=dgSeatHtml(id==="dgSeatNorth"?"Partner":id==="dgSeatWest"?"West":"East",0)});
   overlay.innerHTML='<div class="dg-shuffle-pile"><span class="dg-shuffle-hand a">&#x1F91A;</span><span class="dg-shuffle-hand b">&#x1F91A;</span></div><div class="dg-shuffle-label">Mixing up the tiles&hellip;<span class="dg-shuffle-skip">Tap to skip</span></div>';
   overlay.classList.add("show");
+  dgAdShowShuffle();
   let token={cancelled:false,timers:[]};
   dgShuffleToken=token;
   let mixMs=7000+Math.random()*3000;
@@ -1977,6 +2033,7 @@ function dgStartHandWithAnimation(dealFn){
     overlay.classList.remove("show");
     overlay.onclick=null;
     overlay.innerHTML="";
+    dgAdHideShuffle();
     if(dgShuffleToken===token)dgShuffleToken=null;
     if(!$("dominoModal").classList.contains("show"))return;
     dealFn();
@@ -2536,7 +2593,7 @@ function showIosInstallHintIfNeeded(){if(isStandalone()||!isIos()||localStorage.
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstallPrompt=e;if(!isStandalone()&&localStorage.getItem("prDominoInstallDismissed")!=="1")$("installBanner").classList.add("show")});
 window.addEventListener("appinstalled",()=>{$("installBanner").classList.remove("show")});
 
-loadAutoSave();bonusChanged();render();bootRegionGate();showIosInstallHintIfNeeded();
+loadAutoSave();bonusChanged();render();bootRegionGate();showIosInstallHintIfNeeded();dgAdsInitRails();
 setActiveTab((function(){try{return localStorage.getItem("prDominoActiveTabV1")||"score"}catch(e){return "score"}})());
 tryRestoreSession();checkJoinLinkOnBoot();whenFirebaseReady(()=>{watchConnectionState();renderSessionCard()});
 tgLoadLocal();if(!tournament)tgResetNameFields();renderTournamentTab();tgTryRestoreLink();tgCheckJoinLinkOnBoot();
