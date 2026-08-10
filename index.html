@@ -1559,24 +1559,36 @@ function dgPlaySlamSound(){
   let ngain=ctx.createGain();ngain.gain.setValueAtTime(0.4,t);ngain.gain.exponentialRampToValueAtTime(0.001,t+0.07);
   noise.connect(filt);filt.connect(ngain);ngain.connect(ctx.destination);noise.start(t);
 }
+function dgClackAt(ctx,t,gainScale){
+  // One hard little collision — mostly a short filtered-noise transient (the "clack" body),
+  // plus a brief resonant tone about half the time (the bit of pitch you get off a harder
+  // edge-on-edge hit) — not a smooth hiss, so a run of these reads as tiles/glass knocking
+  // together rather than sand or rain.
+  let nodes=[],freq=700+Math.random()*1300,amp=(0.16+Math.random()*0.2)*gainScale;
+  let noise=ctx.createBufferSource();noise.buffer=dgNoiseBuffer(ctx,0.04);
+  let filt=ctx.createBiquadFilter();filt.type="bandpass";filt.frequency.value=freq;filt.Q.value=2.2;
+  let ngain=ctx.createGain();
+  ngain.gain.setValueAtTime(amp,t);ngain.gain.exponentialRampToValueAtTime(0.001,t+0.05+Math.random()*0.03);
+  noise.connect(filt);filt.connect(ngain);ngain.connect(ctx.destination);
+  noise.start(t);noise.stop(t+0.09);nodes.push(noise);
+  if(Math.random()<0.55){
+    let osc=ctx.createOscillator(),ogain=ctx.createGain();
+    osc.type="triangle";osc.frequency.setValueAtTime(freq*1.6,t);
+    ogain.gain.setValueAtTime(amp*0.5,t);ogain.gain.exponentialRampToValueAtTime(0.001,t+0.04);
+    osc.connect(ogain);ogain.connect(ctx.destination);
+    osc.start(t);osc.stop(t+0.05);nodes.push(osc);
+  }
+  return nodes;
+}
 function dgPlayShuffleSound(durationSec){
   let ctx=dgAudio();if(!ctx)return{stop(){}};
-  let t=ctx.currentTime,dur=Math.max(0.3,durationSec||8);
-  let noise=ctx.createBufferSource();noise.buffer=dgNoiseBuffer(ctx,dur);noise.loop=true;
-  let filt=ctx.createBiquadFilter();filt.type="bandpass";filt.frequency.value=1400;filt.Q.value=0.5;
-  let gain=ctx.createGain();gain.gain.setValueAtTime(0,t);
-  gain.gain.linearRampToValueAtTime(0.12,t+0.4);
-  gain.gain.setValueAtTime(0.12,t+Math.max(0.4,dur-0.6));
-  gain.gain.linearRampToValueAtTime(0,t+dur);
-  let lfo=ctx.createOscillator();lfo.frequency.value=14;
-  let lfoGain=ctx.createGain();lfoGain.gain.value=0.06;
-  lfo.connect(lfoGain);lfoGain.connect(gain.gain);
-  noise.connect(filt);filt.connect(gain);gain.connect(ctx.destination);
-  lfo.start(t);noise.start(t);noise.stop(t+dur);lfo.stop(t+dur);
-  return{stop(){
-    let now=ctx.currentTime;
-    try{gain.gain.cancelScheduledValues(now);gain.gain.setValueAtTime(gain.gain.value,now);gain.gain.linearRampToValueAtTime(0,now+0.15);noise.stop(now+0.16);lfo.stop(now+0.16)}catch(e){}
-  }};
+  let t0=ctx.currentTime,dur=Math.max(0.3,durationSec||8),allNodes=[],t=t0;
+  while(t<t0+dur){
+    let progress=(t-t0)/dur,edgeFade=Math.min(1,progress*6,(1-progress)*6);
+    allNodes.push(...dgClackAt(ctx,t,0.35+0.65*edgeFade));
+    t+=0.045+Math.random()*0.09;
+  }
+  return{stop(){let now=ctx.currentTime;allNodes.forEach(n=>{try{n.stop(now)}catch(e){}})}};
 }
 
 let dgame=null;let dgGeneration=0;let dgHandCount=0;let dgTileKeySeq=0;
