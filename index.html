@@ -433,6 +433,14 @@
        instead of a row — so the rack's width stays pinned to one tile's width instead of
        growing with hand size. Each tile keeps its own upright shape, just stacked downward. */
     .dg-mid>.dg-seat .dg-back-fan{flex-direction:column;align-items:center;padding:5px 3px}
+    /* Partner stays a row (see above), but each tile lies on its side instead of standing —
+       closer to how a fanned hand actually reads held flat — which trims the row's height
+       instead of its width. Rotating in place doesn't change the space flex reserves for
+       each tile (still the pre-rotation 6x17 box), so the gap is widened to cover how far
+       the rotated 17px-wide tile now overhangs its own slot on both sides, or neighbors
+       would overlap. */
+    .dg-oppRow .dg-back-fan{align-items:center;gap:12px;padding:3px 9px}
+    .dg-oppRow .dg-back{transform:rotate(90deg)}
     .dg-mid>.dg-seat .dg-back{border-radius:2px}
     /* stretch (not center) so the recessed panel fills the table's full height; the side
        racks re-center themselves individually so they don't stretch with it. */
