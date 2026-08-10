@@ -312,6 +312,7 @@
     .ad-rail-left{left:14px}
     .ad-rail-right{right:14px}
     @media(max-width:1180px){.ad-rail{display:none!important}}
+    .footer-ad{width:100%;max-width:336px;min-height:50px;max-height:100px;margin:10px auto 0;align-items:center;justify-content:center;overflow:hidden;border-radius:10px;background:rgba(255,255,255,.08)}
 
     .app.app-hidden{
       display:none;
@@ -846,6 +847,7 @@
   </div>
   <div class="celebration" id="celebrationOverlay"><div><div class="flag-fall">&#x1F1F5;&#x1F1F7;</div><div class="flag-fall">&#x1F1F5;&#x1F1F7;</div><div class="flag-fall">&#x1F1F5;&#x1F1F7;</div><div class="flag-fall">&#x1F1F5;&#x1F1F7;</div><div class="flag-fall">&#x1F1F5;&#x1F1F7;</div><div class="flag-fall">&#x1F1F5;&#x1F1F7;</div><div class="flag-fall">&#x1F1F5;&#x1F1F7;</div></div><div class="celebrate-center"><div style="font-size:1.5rem;letter-spacing:6px">&#x1F1F5;&#x1F1F7; &#x1F1F5;&#x1F1F7; &#x1F1F5;&#x1F1F7;</div><h2 class="celebrate-title" id="celebrateWinnerName">Winner!</h2><div class="celebrate-sub">&iexcl;Ganaron! Domino champions</div><div><span class="coqui">&#x1F438;</span><span class="coqui">&#x1F438;</span><span class="coqui">&#x1F438;</span></div><button class="celebrate-btn" onclick="hideCelebration()">Close</button></div></div>
   <div class="footer">Hecho para la mesa, la familia y el domin&oacute; &#x1F1F5;&#x1F1F7;</div>
+  <div class="footer-ad ad-slot" id="footerAd"></div>
 </div>
 
 <div class="domino-modal" id="dominoModal">
@@ -943,7 +945,7 @@ let session={active:false,code:null,isHost:false,role:"admin",viewerCode:null,pl
    AdSense publisher id + ad-unit slot ids to turn placements on — until then no ad script
    is ever loaded and no .ad-slot ever becomes visible, so this ships inert for every user. */
 const ADS_ENABLED=false;
-const AD_CONFIG={publisherId:"",shuffleSlotId:"",railLeftSlotId:"",railRightSlotId:""};
+const AD_CONFIG={publisherId:"",shuffleSlotId:"",railLeftSlotId:"",railRightSlotId:"",footerSlotId:""};
 let dgAdsScriptLoaded=false;
 function dgAdLoadScript(){
   if(dgAdsScriptLoaded)return;
@@ -960,11 +962,12 @@ function dgAdFill(el,slotId){
   el.classList.add("ad-active");
   try{(window.adsbygoogle=window.adsbygoogle||[]).push({})}catch(e){}
 }
-function dgAdsInitRails(){
+function dgAdsInitStatic(){
   if(!ADS_ENABLED||!AD_CONFIG.publisherId)return;
   dgAdLoadScript();
   dgAdFill($("adRailLeft"),AD_CONFIG.railLeftSlotId);
   dgAdFill($("adRailRight"),AD_CONFIG.railRightSlotId);
+  dgAdFill($("footerAd"),AD_CONFIG.footerSlotId);
 }
 function dgAdShowShuffle(){
   if(!ADS_ENABLED||!AD_CONFIG.publisherId||!AD_CONFIG.shuffleSlotId)return;
@@ -2593,7 +2596,7 @@ function showIosInstallHintIfNeeded(){if(isStandalone()||!isIos()||localStorage.
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstallPrompt=e;if(!isStandalone()&&localStorage.getItem("prDominoInstallDismissed")!=="1")$("installBanner").classList.add("show")});
 window.addEventListener("appinstalled",()=>{$("installBanner").classList.remove("show")});
 
-loadAutoSave();bonusChanged();render();bootRegionGate();showIosInstallHintIfNeeded();dgAdsInitRails();
+loadAutoSave();bonusChanged();render();bootRegionGate();showIosInstallHintIfNeeded();dgAdsInitStatic();
 setActiveTab((function(){try{return localStorage.getItem("prDominoActiveTabV1")||"score"}catch(e){return "score"}})());
 tryRestoreSession();checkJoinLinkOnBoot();whenFirebaseReady(()=>{watchConnectionState();renderSessionCard()});
 tgLoadLocal();if(!tournament)tgResetNameFields();renderTournamentTab();tgTryRestoreLink();tgCheckJoinLinkOnBoot();
