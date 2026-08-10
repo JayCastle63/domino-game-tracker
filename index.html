@@ -426,6 +426,11 @@
     .dg-back{width:6px;height:17px;flex:none;border:1px solid #23201b;border-bottom:0;border-radius:2px 2px 0 0;
       background:linear-gradient(180deg,#fffdf4 0%,#f6efdc 34%,#cfc4a9 100%);
       box-shadow:inset -1px 0 0 rgba(0,0,0,.18),0 -1px 2px rgba(0,0,0,.25)}
+    /* Stack the side seats' tile-fan the same way as their now-vertical name — a column
+       instead of a row — so the rack's width stays pinned to one tile's width instead of
+       growing with hand size. Each tile keeps its own upright shape, just stacked downward. */
+    .dg-mid>.dg-seat .dg-back-fan{flex-direction:column;align-items:center;padding:5px 3px}
+    .dg-mid>.dg-seat .dg-back{border-radius:2px}
     /* stretch (not center) so the recessed panel fills the table's full height; the side
        racks re-center themselves individually so they don't stretch with it. */
     .dg-mid{flex:1;display:flex;align-items:stretch;min-height:0;gap:5px;padding:1px}
