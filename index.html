@@ -295,6 +295,12 @@
     .tabbar-btn .tabbar-icon{font-size:1.15rem;line-height:1}
     .tabbar-btn.active{background:rgba(255,255,255,.95);color:var(--dark);opacity:1;border-color:rgba(255,255,255,.85);box-shadow:0 4px 12px rgba(0,20,50,.2)}
     .region-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}.region-card{border:3px solid var(--line);border-radius:20px;padding:14px 10px;background:linear-gradient(180deg,#fff,#f5f9ff);text-align:center;cursor:pointer;transition:.18s;box-shadow:0 4px 12px rgba(0,0,0,.08);min-height:150px;display:flex;flex-direction:column;justify-content:center;gap:6px}.region-card.active{border-color:var(--gold);box-shadow:0 0 0 4px rgba(245,197,66,.26),0 8px 18px rgba(0,0,0,.12);background:linear-gradient(180deg,#fffdf3,#eef4ff)}.region-card.unsupported{opacity:.74;filter:saturate(.82)}.region-flag{font-size:2.35rem;line-height:1}.region-name{font-weight:900;color:var(--dark);font-size:1rem;line-height:1.1}.region-summary{color:var(--muted);font-size:.76rem;line-height:1.25;min-height:34px}.region-tag{display:inline-block;align-self:center;font-size:.72rem;font-weight:900;padding:6px 10px;border-radius:999px;background:#eef4ff;color:var(--blue);border:1px solid #cbd8ec}.region-tag.coming{background:#fff4d8;color:#8a6500;border-color:#f2d27b}.selected-style-box{margin-top:14px;border-radius:16px;background:#f6f8fb;border:1px solid var(--line);padding:12px}.selected-style-title{font-weight:900;color:var(--dark);font-size:1rem;margin-bottom:4px}
+    .welcome-feature-list{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+    .welcome-feature{display:flex;gap:10px;align-items:flex-start;background:#f6f8fb;border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:.84rem;color:var(--text);line-height:1.35}
+    .welcome-feature .wf-icon{font-size:1.15rem;flex:none;line-height:1.3}
+    .welcome-name-box{margin-top:16px}
+    .welcome-name-box label{margin-bottom:6px}
+    .welcome-step-title{font-weight:900;color:var(--dark);font-size:.95rem;margin:16px 0 2px}
 
     .app.app-hidden{
       display:none;
@@ -607,7 +613,26 @@
 <div class="region-modal show" id="regionModal">
   <button class="region-modal-close hidden" id="regionModalCloseBtn" onclick="closeRegionModal()">&#10005;</button>
   <div class="region-modal-card">
-    <div class="region-modal-hero">
+    <div id="welcomeIntro" class="hidden">
+      <div class="region-modal-hero">
+        <div class="region-modal-flag">&#x1F3B2; &#x1F1F5;&#x1F1F7; &#x1F3B2;</div>
+        <h1 class="region-modal-title">Welcome to Domino Boricua!</h1>
+        <div class="region-modal-sub">A scorekeeper built for real domino nights — here's what it can do.</div>
+      </div>
+      <div class="welcome-feature-list">
+        <div class="welcome-feature"><span class="wf-icon">&#x1F3C6;</span><span><b>Score by the rules</b> &mdash; premios, Capic&uacute;, Chuchazo and more, handled automatically for each regional style.</span></div>
+        <div class="welcome-feature"><span class="wf-icon">&#x1F4F7;</span><span><b>Camera tile counter</b> &mdash; point your phone at the leftover tiles and it counts the pips for you.</span></div>
+        <div class="welcome-feature"><span class="wf-icon">&#x1F310;</span><span><b>Play with others</b> &mdash; share a session so everyone watches the score live, or play real hands online with a 60-second turn clock.</span></div>
+        <div class="welcome-feature"><span class="wf-icon">&#x1F3C5;</span><span><b>Tournament brackets</b> &mdash; run a whole game night as a bracket, shared with everyone playing.</span></div>
+      </div>
+      <div class="welcome-name-box">
+        <label for="profileNameInput">Your name</label>
+        <input id="profileNameInput" placeholder="e.g. Miguel" maxlength="40">
+      </div>
+      <div class="welcome-step-title">Now pick your default style</div>
+    </div>
+
+    <div class="region-modal-hero" id="regionModalHero">
       <div class="region-modal-flag">&#x1F3B2; &#x1F1F5;&#x1F1F7; &#x1F1E8;&#x1F1FA; &#x1F1E9;&#x1F1F4; &#x1F3B2;</div>
       <h1 class="region-modal-title">Choose Your Domino Style</h1>
       <div class="region-modal-sub">Pick your region or game type to load the right scoring rules before the app starts.</div>
@@ -784,9 +809,9 @@
       <div class="grid2" id="targetPremiosRow" style="margin-top:10px"><div><label>Winning Total</label><select id="targetScore" onchange="saveAndRender()"></select></div><div><label>Premios</label><select id="premiosMode" onchange="premiosModeChanged()"></select></div></div>
       <div id="specialsRow" style="margin-top:10px"><label>Specials (Chuchazo / Capic&uacute;)</label><select id="specialsMode" onchange="specialsModeChanged()"></select></div>
       <div class="switch"><input type="checkbox" id="autoSaveToggle" checked onchange="saveAndRender()"><div><strong>Autosave on this phone</strong><div class="small">Keeps score if Safari/Chrome closes.</div></div></div>
-      <div class="grid2" style="margin-top:12px"><button class="green" onclick="startGame()">Start Game</button><button class="gray" onclick="resetCurrentGame()">Reset Current</button></div><button class="region-change-button" onclick="openRegionModal(true)">Change Domino Style</button>
+      <div class="grid2" style="margin-top:12px"><button class="green" onclick="startGame()">Start Game</button><button class="gray" onclick="resetCurrentGame()">Reset Current</button></div><button class="region-change-button" onclick="openRegionModal(true)">Change Domino Style</button><button class="region-change-button" onclick="openProfileEditor()">Edit Profile</button>
     </div>
-    <div class="hidden" id="setupCollapsed"><div class="small">Setup hidden. Target: <strong id="miniTarget">500</strong> &bull; Style: <strong id="miniStyle">Puerto Rican</strong></div><button class="mini-button" style="margin-top:10px" onclick="showSetup()">Edit Setup</button><button class="region-change-button" onclick="openRegionModal(true)">Change Domino Style</button></div>
+    <div class="hidden" id="setupCollapsed"><div class="small">Setup hidden. Target: <strong id="miniTarget">500</strong> &bull; Style: <strong id="miniStyle">Puerto Rican</strong></div><button class="mini-button" style="margin-top:10px" onclick="showSetup()">Edit Setup</button><button class="region-change-button" onclick="openRegionModal(true)">Change Domino Style</button><button class="region-change-button" onclick="openProfileEditor()">Edit Profile</button></div>
     <div class="pillrow" id="premioPills"></div>
   </div>
 
@@ -898,6 +923,9 @@ const RULE_SETS={
 };
 let premios=[100,75,50,25];let tapPoints=[];let stream=null;let liveActive=false,liveTimer=null,lastLiveCount=0,liveWorkCanvas=null,tallyTotal=0,tallySweeps=0;let state={team1Score:0,team2Score:0,premioUsed:[false,false,false,false],history:[],gameTracker:[],gameStarted:false,celebrationDismissed:false,setupOpen:false,selectedRuleSet:"puertoRican",regionConfirmed:false,playersList:[],players:[],rounds:[]};
 let session={active:false,code:null,isHost:false,role:"admin",viewerCode:null,playerId:null,playerName:null};let sessionUnsub=null;let lastAppliedSessionRuleSet=null;let settingsPushTimer=null;
+let profile=null;
+function loadProfile(){try{profile=JSON.parse(localStorage.getItem("prDominoProfileV1")||"null")}catch(e){profile=null}}
+function saveProfile(name,defaultRuleSet){profile={name,defaultRuleSet,createdAt:profile&&profile.createdAt||new Date().toISOString()};localStorage.setItem("prDominoProfileV1",JSON.stringify(profile))}
 let tournament=null;let tournamentUnsub=null;let tgNameFieldCount=0;
 function blockedForViewer(){if(session.active&&session.role==="viewer"){alert("You're in view-only mode for this session. Ask the host for the player code to make changes.");return true}return false}
 function $(id){return document.getElementById(id)}function activeRule(){return RULE_SETS[state.selectedRuleSet]||RULE_SETS.puertoRican}function teamName(t){return t===1?($("team1Name").value.trim()||"Team 1"):($("team2Name").value.trim()||"Team 2")}function target(){return Number($("targetScore").value)||activeRule().defaultTarget}function mode(){return $("premiosMode").value}function now(){return new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}function selectedWinner(){return Number(document.querySelector('input[name="handWinnerRadio"]:checked').value)}function nextPremioIndex(){return state.premioUsed.findIndex(x=>!x)}function escapeHtml(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}function whenFirebaseReady(cb){if(window.FirebaseBridge){cb()}else{window.addEventListener("firebase-ready",cb,{once:true})}}
@@ -910,11 +938,24 @@ function openRegionModal(allowClose=false){
   $("regionModal").classList.add("show");
   $("mainApp").classList.add("app-hidden");
   $("regionModalCloseBtn").classList.toggle("hidden",!allowClose);
+  let isFirstRun=!profile;
+  $("welcomeIntro").classList.toggle("hidden",!isFirstRun);
+  $("regionModalHero").classList.toggle("hidden",isFirstRun);
+  if(isFirstRun)$("profileNameInput").value="";
   renderRegionSelector(true);
 }
 function closeRegionModal(){
   $("regionModal").classList.remove("show");
   $("mainApp").classList.remove("app-hidden");
+}
+function openProfileEditor(){
+  $("regionModal").classList.add("show");
+  $("mainApp").classList.add("app-hidden");
+  $("regionModalCloseBtn").classList.remove("hidden");
+  $("welcomeIntro").classList.remove("hidden");
+  $("regionModalHero").classList.add("hidden");
+  $("profileNameInput").value=(profile&&profile.name)||"";
+  renderRegionSelector(true);
 }
 function confirmCurrentRegion(){
   const rule = activeRule();
@@ -922,12 +963,17 @@ function confirmCurrentRegion(){
     alert(rule.name+" is staged for a future scoring screen. Choose Puerto Rican, Cuban, or Dominican for now.");
     return;
   }
+  if(!$("welcomeIntro").classList.contains("hidden")){
+    let name=($("profileNameInput").value||"").trim()||"Player";
+    saveProfile(name,state.selectedRuleSet);
+  }
   state.regionConfirmed=true;
   applyRuleSet(state.selectedRuleSet);
   closeRegionModal();
   saveAndRender();
 }
 function bootRegionGate(){
+  loadProfile();
   renderRegionSelector(true);
   if(state.regionConfirmed){
     closeRegionModal();
@@ -945,7 +991,13 @@ function renderRegionSelector(force){
   if(!force&&lastRenderedRegionRuleSet===state.selectedRuleSet)return;
   lastRenderedRegionRuleSet=state.selectedRuleSet;
   let grid=$("regionGrid"),sel=$("regionSelect");grid.innerHTML="";sel.innerHTML="";Object.values(RULE_SETS).forEach(r=>{let c=document.createElement("div");c.className="region-card"+(r.id===state.selectedRuleSet?" active":"")+(!r.supported?" unsupported":"");c.onclick=()=>selectRuleSet(r.id);c.innerHTML=`<div class="region-flag">${r.flagHtml}</div><div class="region-name">${r.name}</div><div class="region-summary">${r.summary}</div><div class="region-tag ${r.supported?"":"coming"}">${r.supported?"Available":"Coming Soon"}</div>`;grid.appendChild(c);let o=document.createElement("option");o.value=r.id;o.innerHTML=`${r.flagHtml} ${r.name}${r.supported?"":" - Coming Soon"}`;if(r.id===state.selectedRuleSet)o.selected=true;sel.appendChild(o)});$("selectedStyleTitle").innerHTML=activeRule().flagHtml+" "+activeRule().name;$("selectedStyleSummary").innerHTML=activeRule().summary}
-function selectRuleSet(id){let r=RULE_SETS[id];if(!r)return;if(!r.supported){alert(r.name+" is staged for a future scoring screen. Puerto Rican, Cuban, and Dominican work now.");$("regionSelect").value=state.selectedRuleSet;renderRegionSelector(true);return}state.selectedRuleSet=id;state.regionConfirmed=true;applyRuleSet(id);state.setupOpen=true;closeRegionModal();render();saveAndRender()}
+function selectRuleSet(id){let r=RULE_SETS[id];if(!r)return;if(!r.supported){alert(r.name+" is staged for a future scoring screen. Puerto Rican, Cuban, and Dominican work now.");$("regionSelect").value=state.selectedRuleSet;renderRegionSelector(true);return}state.selectedRuleSet=id;applyRuleSet(id);
+  if($("welcomeIntro")&&!$("welcomeIntro").classList.contains("hidden")){
+    // Welcome/profile-edit flow: picking a style just selects it — closing here would skip
+    // past the name field before "Use This Style" gets a chance to read and save it.
+    renderRegionSelector(true);return;
+  }
+  state.regionConfirmed=true;state.setupOpen=true;closeRegionModal();render();saveAndRender()}
 function applyRuleSet(id,resetPremios=true){let r=RULE_SETS[id]||RULE_SETS.puertoRican;premios=r.premios||[];if(resetPremios)state.premioUsed=premios.map(()=>false);let ts=$("targetScore");ts.innerHTML="";r.targetOptions.forEach(v=>{let o=document.createElement("option");o.value=v;o.textContent=v+" points";if(v===r.defaultTarget)o.selected=true;ts.appendChild(o)});let ps=$("premiosMode");ps.innerHTML="";if(premios.length){let on=document.createElement("option");on.value="on";on.textContent="Auto: "+premios.join(" / ");ps.appendChild(on);let off=document.createElement("option");off.value="off";off.textContent="Off";ps.appendChild(off);ps.value="on";ps.disabled=false}else{let off=document.createElement("option");off.value="off";off.textContent="No premios for this style";ps.appendChild(off);ps.value="off";ps.disabled=true}let hasSpecials=r.bonuses.some(b=>b[0]==="chuchazo"||b[0]==="capicu"),sr=$("specialsRow"),sm=$("specialsMode");if(sr)sr.classList.toggle("hidden",!hasSpecials);if(sm){sm.innerHTML="";let on=document.createElement("option");on.value="on";on.textContent="On (Chuchazo + Capicú count)";sm.appendChild(on);let off=document.createElement("option");off.value="off";off.textContent="Off";sm.appendChild(off);sm.value="on";sm.disabled=!hasSpecials}renderBonusOptions();renderQuickScoreButtons()}
 function renderBonusOptions(){let r=activeRule(),bt=$("bonusType"),sm=$("specialsMode"),specialsOff=sm&&sm.value==="off";bt.innerHTML="";r.bonuses.forEach(b=>{if(specialsOff&&(b[0]==="chuchazo"||b[0]==="capicu"))return;let o=document.createElement("option");o.value=b[0];o.dataset.points=b[2];o.innerHTML=b[2]?`${b[1]} +${b[2]}`:b[1];bt.appendChild(o)});bonusChanged()}
 function specialsEnabled(){let sm=$("specialsMode");return !sm||sm.disabled||sm.value!=="off"}
@@ -1087,7 +1139,7 @@ async function resolveJoinCode(rawCode){
 async function startSession(){
   if(!window.FirebaseBridge||!window.FirebaseBridge.enabled){alert("Ask the app owner to finish the one-time shared-sessions setup.");return}
   if(session.active)leaveSession(true);
-  let name=prompt("Your name (shown to other players):",session.playerName||"Host");
+  let name=prompt("Your name (shown to other players):",session.playerName||(profile&&profile.name)||"Host");
   if(name===null)return;
   name=name.trim()||"Host";
   try{
@@ -1103,7 +1155,7 @@ function openJoinPrompt(){
   if(!window.FirebaseBridge||!window.FirebaseBridge.enabled){alert("Ask the app owner to finish the one-time shared-sessions setup.");return}
   let code=prompt("Enter the player code or viewer code:");
   if(!code)return;
-  let name=prompt("Your name (shown to other players):","Player");
+  let name=prompt("Your name (shown to other players):",(profile&&profile.name)||"Player");
   if(name===null)return;
   joinSession(code,name.trim()||"Player");
 }
@@ -1224,7 +1276,7 @@ function checkJoinLinkOnBoot(){
     if(!window.FirebaseBridge.enabled)return;
     if(session.active&&session.code===code)return;
     if(!confirm("Join shared session "+code+"?"))return;
-    let name=prompt("Your name (shown to other players):","Player");
+    let name=prompt("Your name (shown to other players):",(profile&&profile.name)||"Player");
     if(name===null)return;
     joinSession(code,name.trim()||"Player");
   });
