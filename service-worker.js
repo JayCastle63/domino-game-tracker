@@ -1,4 +1,4 @@
-const CACHE_NAME = "domino-boricua-v25";
+const CACHE_NAME = "domino-boricua-v26";
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
@@ -8,7 +8,14 @@ const FILES_TO_CACHE = [
   "./icons/icon-512.png",
   "./assets/table-tray.jpg",
   "./assets/el-morro.jpg",
-  "./assets/coqui-back.jpg"
+  "./assets/coqui-back.jpg",
+  "./assets/sounds/knock.mp3",
+  "./assets/sounds/slam.mp3",
+  "./assets/sounds/clack1.mp3",
+  "./assets/sounds/clack2.mp3",
+  "./assets/sounds/clack3.mp3",
+  "./assets/sounds/clack4.mp3",
+  "./assets/sounds/clack5.mp3"
 ];
 
 self.addEventListener("install", event => {
