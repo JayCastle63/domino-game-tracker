@@ -413,12 +413,14 @@
     .dg-seat.turn{background:linear-gradient(180deg,rgba(255,206,92,.95),rgba(206,150,32,.95));color:#3b2800;text-shadow:none;border-color:#ffe9b0;box-shadow:0 0 12px rgba(255,196,64,.55),0 2px 6px rgba(0,0,0,.4)}
     /* Real names are arbitrary length; clamp them so a long one can't squeeze the board. */
     .dg-seat-name{max-width:104px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    /* Every opponent seat (partner included) reads the same compact way now: name sideways,
-       tile-back fan stacked in a column under it — you don't need to read a name mid-play,
-       just a tile count at a glance, and this is the one consistent "opponent rack" look
-       whether they're sitting across from you or off to a side. */
-    .dg-oppRow .dg-seat,.dg-mid>.dg-seat{padding-left:4px;padding-right:4px}
-    .dg-oppRow .dg-seat .dg-seat-name,.dg-mid>.dg-seat .dg-seat-name{writing-mode:vertical-rl;text-orientation:mixed;max-width:none;max-height:92px;margin:0 auto}
+    /* West/East flank the play panel top-to-bottom, so turning their name sideways and
+       stacking their tile-back fan in a column keeps that rack pinned to one tile's width
+       instead of growing with hand size. Partner sits along the TOP edge instead — the same
+       axis the table itself spans — so their rack stays a normal horizontal row: stacking
+       it vertically like the side seats would eat into the board's height instead of the
+       board's width, which is the wrong trade for that position. */
+    .dg-mid>.dg-seat{padding-left:4px;padding-right:4px}
+    .dg-mid>.dg-seat .dg-seat-name{writing-mode:vertical-rl;text-orientation:mixed;max-width:none;max-height:92px;margin:0 auto}
     .dg-partner-dot{color:#6ef0a5;margin-right:3px;font-size:.52rem;vertical-align:middle}
     .dg-seat.turn .dg-partner-dot{color:#1c6b3a}
     .dg-back-fan{display:flex;align-items:flex-end;gap:1px;padding:2px 5px 3px;border-radius:3px;
@@ -427,11 +429,11 @@
     .dg-back{width:6px;height:17px;flex:none;border:1px solid #23201b;border-bottom:0;border-radius:2px 2px 0 0;
       background:linear-gradient(180deg,#fffdf4 0%,#f6efdc 34%,#cfc4a9 100%);
       box-shadow:inset -1px 0 0 rgba(0,0,0,.18),0 -1px 2px rgba(0,0,0,.25)}
-    /* Stack every opponent seat's tile-fan the same way as its now-vertical name — a column
+    /* Stack the side seats' tile-fan the same way as their now-vertical name — a column
        instead of a row — so the rack's width stays pinned to one tile's width instead of
        growing with hand size. Each tile keeps its own upright shape, just stacked downward. */
-    .dg-oppRow .dg-seat .dg-back-fan,.dg-mid>.dg-seat .dg-back-fan{flex-direction:column;align-items:center;padding:5px 3px}
-    .dg-oppRow .dg-seat .dg-back,.dg-mid>.dg-seat .dg-back{border-radius:2px}
+    .dg-mid>.dg-seat .dg-back-fan{flex-direction:column;align-items:center;padding:5px 3px}
+    .dg-mid>.dg-seat .dg-back{border-radius:2px}
     /* stretch (not center) so the recessed panel fills the table's full height; the side
        racks re-center themselves individually so they don't stretch with it. */
     .dg-mid{flex:1;display:flex;align-items:stretch;min-height:0;gap:5px;padding:1px}
