@@ -428,19 +428,20 @@
        tray on the physical table. Board tiles land on this instead of floating over a photo. */
     .dg-board{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:10px;max-height:100%;
       border-radius:10px;
-      /* Felt playing surface inset into the wood, framed the way the real tray is: a gold
-         hairline, then the deep blue scroll band, then brass. The El Morro photo rides
-         underneath at low opacity so it reads as printed-into-the-felt texture rather than
-         a picture competing with the tiles (cropped to portrait it was unreadable as art). */
+      /* The play surface IS the El Morro artwork — assets/el-morro.jpg is that panel cropped
+         out of the tray photo. Using the whole tray here meant rendering a picture of a table
+         (with its own frame and racks) inside this table's frame and racks, which read as a
+         frame inside a frame. One frame now: this brass bezel. The scrim is only as dark as
+         tile legibility needs, and sits under a vignette so the busiest part of the photo
+         doesn't fight the tiles in the middle. */
       border:2px solid var(--brass-lo);
-      outline:3px solid #16305e;outline-offset:-6px;
       background:
-        linear-gradient(rgba(18,54,34,.90),rgba(10,38,24,.94)),
-        url('assets/table-tray.jpg') center/cover no-repeat,
-        radial-gradient(ellipse at 50% 42%,#1d5c3a,#123d26 70%,#0c2a1b);
+        radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.38) 0%,rgba(0,0,0,.3) 45%,rgba(0,0,0,.5) 100%),
+        url('assets/el-morro.jpg') center/cover no-repeat,
+        #35322a;
       box-shadow:
-        inset 0 0 0 1px rgba(214,178,92,.5),
-        inset 0 6px 20px rgba(0,0,0,.6),inset 0 -3px 12px rgba(0,0,0,.45),
+        inset 0 0 0 1px rgba(214,178,92,.55),
+        inset 0 5px 18px rgba(0,0,0,.55),inset 0 -3px 12px rgba(0,0,0,.4),
         0 1px 0 rgba(255,220,150,.22)}
     .dg-end-zone{border:3px dashed transparent;border-radius:10px;padding:2px;display:flex;align-items:center}
     .dg-end-zone.legal{border-color:var(--gold);animation:dgPulse 1s ease-in-out infinite}
@@ -454,7 +455,10 @@
       border-top:2px solid var(--brass-mid);
       box-shadow:inset 0 2px 0 rgba(255,238,196,.35),inset 0 -8px 18px rgba(0,0,0,.45)}
     .dg-hand::-webkit-scrollbar{height:0}
-    .domino-tile{background:linear-gradient(158deg,#fffefb 0%,#faf5e9 52%,#e9e0cc 100%);border:2px solid #1a1a1a;border-radius:6px;display:flex;flex-direction:row;box-shadow:0 2px 0 rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.9);cursor:pointer;transition:.15s;flex:none}
+    /* The board is a photograph now, and the fort's stonework sits close to tile cream, so
+       tiles carry their own soft drop shadow to separate from whatever is behind them —
+       cheaper than dimming the artwork back into mud to buy contrast. */
+    .domino-tile{background:linear-gradient(158deg,#fffefb 0%,#faf5e9 52%,#e9e0cc 100%);border:2px solid #1a1a1a;border-radius:6px;display:flex;flex-direction:row;box-shadow:0 2px 0 rgba(0,0,0,.4),0 3px 9px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.9);cursor:pointer;transition:.15s;flex:none}
     .domino-tile .dt-half{width:19px;height:27px;border-right:2px solid #1a1a1a;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:2px}
     .domino-tile .dt-half:last-child{border-right:0}
     /* Hand tiles are noticeably bigger than board tiles and lifted off the rack with a
@@ -489,6 +493,11 @@
     .dg-hands-reveal{text-align:left;background:rgba(246,248,251,.85);border-radius:14px;padding:10px;margin-bottom:12px;font-size:.8rem;color:var(--text)}
     .dg-hands-reveal .seat-row{margin-bottom:6px}
     @media(max-width:380px){.domino-tile .dt-half{width:16px;height:24px}.domino-tile.lg .dt-half{width:25px;height:36px}.domino-tile.lg.vertical .dt-half{width:36px;height:25px}}
+    /* On a wide screen the table would stretch the full window and the tiles end up looking
+       like confetti on a billboard. Cap it at a table-sized width and centre it. */
+    @media(min-width:900px){
+      .dg-scoreline,.dg-oppRow,.dg-mid,.dg-hand,.dg-actions{width:100%;max-width:860px;margin-left:auto;margin-right:auto}
+    }
     /* Landscape on a phone leaves ~390px of height for a layout that stacks topbar, score,
        seats, board, turn label, hand and buttons. Everything still fits, but the board gets
        squeezed to a sliver once a chain starts wrapping — so shrink the chrome and the hand
