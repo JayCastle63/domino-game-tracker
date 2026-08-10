@@ -40,6 +40,10 @@
         sb.from("session_game_tracker").select("*").eq("session_code", code).order("id", { ascending: true }),
         sb.from("session_roster").select("*").eq("session_code", code).order("id", { ascending: true }),
       ]);
+      // A failed query is NOT the same thing as "this session is gone". Surface it so the
+      // caller can hold on to the last known state instead of telling everyone the session
+      // ended — a two-second WiFi drop used to eject every player mid-game.
+      for (const r of [s, players, history, rounds, tracker, roster]) if (r.error) throw r.error;
       if (!s.data) return null;
       const row = s.data, val = {
         meta: { createdAt: row.created_at, hostId: row.host_id, viewerCode: row.viewer_code },
@@ -173,7 +177,11 @@
         let cancelled = false;
         async function push() {
           if (cancelled) return;
-          const val = await fetchSessionTree(code).catch(() => null);
+          let val;
+          // On a transient failure, stay quiet and keep whatever was last rendered — the next
+          // realtime event (or the next push) recovers. Only a successful fetch that comes back
+          // genuinely empty means the session really ended.
+          try { val = await fetchSessionTree(code); } catch (e) { return; }
           if (cancelled) return;
           callback({ val: () => val, exists: () => val !== null });
         }
@@ -193,8 +201,11 @@
         let cancelled = false;
         async function push() {
           if (cancelled) return;
-          const { data } = await sb.from("tournaments").select("*").eq("code", code).maybeSingle().catch(() => ({ data: null }));
-          if (cancelled) return;
+          let res;
+          // Same rule as sessions: a failed fetch must not read as "the tournament was closed".
+          try { res = await sb.from("tournaments").select("*").eq("code", code).maybeSingle(); } catch (e) { return; }
+          if (res.error || cancelled) return;
+          const data = res.data;
           callback({ val: () => (data ? data.data : null), exists: () => !!data });
         }
         push();
@@ -208,8 +219,11 @@
         let cancelled = false;
         async function push() {
           if (cancelled) return;
-          const { data } = await sb.from("session_live_game").select("*").eq("session_code", code).maybeSingle().catch(() => ({ data: null }));
-          if (cancelled) return;
+          let res;
+          // A dropped fetch here would otherwise reset a live table back to the seat picker.
+          try { res = await sb.from("session_live_game").select("*").eq("session_code", code).maybeSingle(); } catch (e) { return; }
+          if (res.error || cancelled) return;
+          const data = res.data;
           callback({ val: () => (data ? data.data : null), exists: () => !!data });
         }
         push();
@@ -225,14 +239,18 @@
     // client code alone, so this is a best-effort approximation: fire a keepalive REST call on
     // pagehide (covers closing the tab/app normally — the overwhelming majority of "leaves").
     // It does NOT cover a hard crash or a killed network, unlike real Firebase onDisconnect.
+    let pendingDisconnectCleanup = null;
     function bridgeOnDisconnect(ref) {
       return {
         remove() {
           const p = ref.path.split("/");
           if (p[0] !== "sessions" || p.length !== 4 || p[2] !== "players") return;
           const url = `${SUPABASE_URL}/rest/v1/session_players?session_code=eq.${encodeURIComponent(p[1])}&player_id=eq.${encodeURIComponent(p[3])}`;
-          const cleanup = () => { try { fetch(url, { method: "DELETE", keepalive: true, headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } }); } catch (e) {} };
-          window.addEventListener("pagehide", cleanup);
+          // Only one registration is ever live. This runs again on every join/restore, and a
+          // stale listener would fire a delete against a session the player already left.
+          if (pendingDisconnectCleanup) window.removeEventListener("pagehide", pendingDisconnectCleanup);
+          pendingDisconnectCleanup = () => { try { fetch(url, { method: "DELETE", keepalive: true, headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } }); } catch (e) {} };
+          window.addEventListener("pagehide", pendingDisconnectCleanup);
         }
       };
     }
@@ -354,7 +372,10 @@
     .history{max-height:270px;overflow:auto;background:white;border:1px solid var(--line);border-radius:14px}.historyItem{padding:10px 12px;border-bottom:1px solid #edf1f7;font-size:.9rem}.historyItem:last-child{border-bottom:0}.cameraWrap{display:grid;gap:10px}video,canvas,img{width:100%;border-radius:16px;background:#111;max-height:420px;object-fit:contain;border:2px solid var(--line)}#snapshot{display:none}#videoStage{position:relative;display:none;border-radius:16px;overflow:hidden;border:2px solid var(--line);background:#111;max-height:420px}#videoStage.show{display:block}#videoStage video{border:0;border-radius:0;margin:0;display:block;max-height:420px}#liveOverlay{position:absolute;inset:0;width:100%;height:100%;max-height:none;pointer-events:none;border:0;border-radius:0;background:transparent}.tapCount{font-size:1.8rem;font-weight:900;color:var(--red);text-align:center}.icon-btn{font-size:1.35rem;padding:12px 8px;min-height:54px;display:flex;align-items:center;justify-content:center}.icon-label{font-size:.7rem;font-weight:800;display:block;margin-top:3px}.info-box{display:none;background:#f6f8fb;border:1px solid var(--line);border-radius:14px;padding:10px;font-size:.82rem;color:var(--muted);line-height:1.35}.footer{text-align:center;color:white;opacity:.9;font-size:.8rem;margin-top:13px}
     .celebration{display:none;position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden;background:radial-gradient(circle at center,rgba(255,255,255,.15),rgba(0,0,0,.45))}.celebration.show{display:block}.flag-fall{position:absolute;top:-12vh;font-size:2rem;animation:fall linear infinite,sway ease-in-out infinite;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35));opacity:.95}.flag-fall:nth-child(1){left:4%;animation-duration:7s,3.2s}.flag-fall:nth-child(2){left:16%;animation-duration:8.5s,4.1s}.flag-fall:nth-child(3){left:28%;animation-duration:7.8s,3.7s}.flag-fall:nth-child(4){left:42%;animation-duration:9s,4.5s}.flag-fall:nth-child(5){left:57%;animation-duration:8.2s,3.6s}.flag-fall:nth-child(6){left:72%;animation-duration:7.2s,3.1s}.flag-fall:nth-child(7){left:88%;animation-duration:8.8s,4.8s}.celebrate-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,560px);background:rgba(255,255,255,.94);border:4px solid var(--gold);border-radius:24px;box-shadow:0 18px 40px rgba(0,0,0,.35);padding:18px;text-align:center;pointer-events:auto}.celebrate-title{font-size:1.6rem;font-weight:900;color:var(--dark);line-height:1.15;margin:0}.celebrate-sub{margin-top:8px;color:var(--muted);font-size:.95rem;font-weight:700}.coqui{font-size:3.8rem;display:inline-block;animation:bounceDance 1.2s ease-in-out infinite}.celebrate-btn{margin-top:14px;background:var(--dark);color:white;border:none;border-radius:14px;padding:12px 16px;font-weight:900;font-size:.95rem;cursor:pointer}
     @keyframes fall{0%{transform:translateY(-15vh) rotate(0deg)}100%{transform:translateY(120vh) rotate(360deg)}}@keyframes sway{0%,100%{margin-left:0}50%{margin-left:18px}}@keyframes bounceDance{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-16px) rotate(10deg)}}
-    @media(max-width:560px){body{padding:calc(18px + env(safe-area-inset-top)) 8px calc(18px + env(safe-area-inset-bottom))}.card{padding:12px}h1{font-size:1.18rem}.score{font-size:2.35rem}.grid2{grid-template-columns:1fr}.scoreboard{gap:8px}button{font-size:.9rem;padding:12px 8px}.icon-grid{grid-template-columns:repeat(4,1fr)!important}.region-grid{grid-template-columns:1fr 1fr}.team{padding:10px}.teamName{font-size:.86rem}}
+    /* Bottom padding has to clear the floating tab bar (it sits 16px up and is ~66px tall).
+       This used to drop to 18px on phones, which put the footer — and very nearly the last
+       button on every tab — underneath the bar. */
+    @media(max-width:560px){body{padding:calc(18px + env(safe-area-inset-top)) 8px calc(110px + env(safe-area-inset-bottom))}.card{padding:12px}h1{font-size:1.18rem}.score{font-size:2.35rem}.grid2{grid-template-columns:1fr}.scoreboard{gap:8px}button{font-size:.9rem;padding:12px 8px}.icon-grid{grid-template-columns:repeat(4,1fr)!important}.region-grid{grid-template-columns:1fr 1fr}.team{padding:10px}.teamName{font-size:.86rem}}
 
     /* ---- Interactive Puerto Rican domino table (play vs. computer) ---- */
     .domino-modal{position:fixed;inset:0;z-index:10001;display:none;flex-direction:column;background-image:linear-gradient(rgba(4,20,10,.72),rgba(4,20,10,.76)),url('assets/table-tray.jpg');background-size:cover;background-position:center;background-repeat:no-repeat;padding:calc(8px + env(safe-area-inset-top)) 6px calc(8px + env(safe-area-inset-bottom));overflow:hidden}
@@ -403,6 +424,22 @@
     .dg-hands-reveal{text-align:left;background:rgba(246,248,251,.85);border-radius:14px;padding:10px;margin-bottom:12px;font-size:.8rem;color:var(--text)}
     .dg-hands-reveal .seat-row{margin-bottom:6px}
     @media(max-width:380px){.domino-tile .dt-half{width:16px;height:24px}.domino-tile.lg .dt-half{width:25px;height:36px}.domino-tile.lg.vertical .dt-half{width:36px;height:25px}}
+    /* Landscape on a phone leaves ~390px of height for a layout that stacks topbar, score,
+       seats, board, turn label, hand and buttons. Everything still fits, but the board gets
+       squeezed to a sliver once a chain starts wrapping — so shrink the chrome and the hand
+       tiles here and give that space back to the table. */
+    @media(orientation:landscape) and (max-height:500px){
+      .domino-modal{padding-top:calc(2px + env(safe-area-inset-top));padding-bottom:calc(2px + env(safe-area-inset-bottom))}
+      .dg-topbar{padding:0 4px 2px}.dg-topbar h2{font-size:.82rem}
+      .dg-close{padding:5px 9px;font-size:.72rem}
+      .dg-scoreline{font-size:.72rem;padding:0 4px 2px;gap:6px}
+      .dg-oppRow{padding:0}.dg-seat{padding:3px 7px;font-size:.68rem}
+      .dg-turn{font-size:.78rem;padding:0 4px 2px}
+      .dg-hand{min-height:44px;padding:4px 4px calc(2px + env(safe-area-inset-bottom));gap:4px}
+      .dg-actions{padding:2px 0 0}.dg-actions button{padding:8px 14px;font-size:.78rem}
+      .domino-tile.lg .dt-half{width:24px;height:34px}
+      .domino-tile.lg.vertical .dt-half{width:34px;height:24px}
+    }
 
     /* ---- Shuffle & deal flourish: tiles spread face-down across the table and get mixed
        with two sweeping "hands", then fly out round-robin to each seat before the real hand
@@ -773,7 +810,7 @@ function openRegionModal(allowClose=false){
   $("regionModal").classList.add("show");
   $("mainApp").classList.add("app-hidden");
   $("regionModalCloseBtn").classList.toggle("hidden",!allowClose);
-  renderRegionSelector();
+  renderRegionSelector(true);
 }
 function closeRegionModal(){
   $("regionModal").classList.remove("show");
@@ -791,7 +828,7 @@ function confirmCurrentRegion(){
   saveAndRender();
 }
 function bootRegionGate(){
-  renderRegionSelector();
+  renderRegionSelector(true);
   if(state.regionConfirmed){
     closeRegionModal();
   } else {
@@ -799,8 +836,16 @@ function bootRegionGate(){
   }
 }
 
-function renderRegionSelector(){let grid=$("regionGrid"),sel=$("regionSelect");grid.innerHTML="";sel.innerHTML="";Object.values(RULE_SETS).forEach(r=>{let c=document.createElement("div");c.className="region-card"+(r.id===state.selectedRuleSet?" active":"")+(!r.supported?" unsupported":"");c.onclick=()=>selectRuleSet(r.id);c.innerHTML=`<div class="region-flag">${r.flagHtml}</div><div class="region-name">${r.name}</div><div class="region-summary">${r.summary}</div><div class="region-tag ${r.supported?"":"coming"}">${r.supported?"Available":"Coming Soon"}</div>`;grid.appendChild(c);let o=document.createElement("option");o.value=r.id;o.innerHTML=`${r.flagHtml} ${r.name}${r.supported?"":" - Coming Soon"}`;if(r.id===state.selectedRuleSet)o.selected=true;sel.appendChild(o)});$("selectedStyleTitle").innerHTML=activeRule().flagHtml+" "+activeRule().name;$("selectedStyleSummary").innerHTML=activeRule().summary}
-function selectRuleSet(id){let r=RULE_SETS[id];if(!r)return;if(!r.supported){alert(r.name+" is staged for a future scoring screen. Puerto Rican, Cuban, and Dominican work now.");$("regionSelect").value=state.selectedRuleSet;renderRegionSelector();return}state.selectedRuleSet=id;state.regionConfirmed=true;applyRuleSet(id);state.setupOpen=true;closeRegionModal();render();saveAndRender()}
+/* render() runs on every score change and every realtime session update, and this rebuilds
+   nine region cards plus nine <select> options from scratch — wasted work, and it stomps the
+   dropdown if someone happens to be using it. The picker only ever depends on the selected
+   style, so skip the rebuild unless that changed (callers that must repaint pass force). */
+let lastRenderedRegionRuleSet=null;
+function renderRegionSelector(force){
+  if(!force&&lastRenderedRegionRuleSet===state.selectedRuleSet)return;
+  lastRenderedRegionRuleSet=state.selectedRuleSet;
+  let grid=$("regionGrid"),sel=$("regionSelect");grid.innerHTML="";sel.innerHTML="";Object.values(RULE_SETS).forEach(r=>{let c=document.createElement("div");c.className="region-card"+(r.id===state.selectedRuleSet?" active":"")+(!r.supported?" unsupported":"");c.onclick=()=>selectRuleSet(r.id);c.innerHTML=`<div class="region-flag">${r.flagHtml}</div><div class="region-name">${r.name}</div><div class="region-summary">${r.summary}</div><div class="region-tag ${r.supported?"":"coming"}">${r.supported?"Available":"Coming Soon"}</div>`;grid.appendChild(c);let o=document.createElement("option");o.value=r.id;o.innerHTML=`${r.flagHtml} ${r.name}${r.supported?"":" - Coming Soon"}`;if(r.id===state.selectedRuleSet)o.selected=true;sel.appendChild(o)});$("selectedStyleTitle").innerHTML=activeRule().flagHtml+" "+activeRule().name;$("selectedStyleSummary").innerHTML=activeRule().summary}
+function selectRuleSet(id){let r=RULE_SETS[id];if(!r)return;if(!r.supported){alert(r.name+" is staged for a future scoring screen. Puerto Rican, Cuban, and Dominican work now.");$("regionSelect").value=state.selectedRuleSet;renderRegionSelector(true);return}state.selectedRuleSet=id;state.regionConfirmed=true;applyRuleSet(id);state.setupOpen=true;closeRegionModal();render();saveAndRender()}
 function applyRuleSet(id,resetPremios=true){let r=RULE_SETS[id]||RULE_SETS.puertoRican;premios=r.premios||[];if(resetPremios)state.premioUsed=premios.map(()=>false);let ts=$("targetScore");ts.innerHTML="";r.targetOptions.forEach(v=>{let o=document.createElement("option");o.value=v;o.textContent=v+" points";if(v===r.defaultTarget)o.selected=true;ts.appendChild(o)});let ps=$("premiosMode");ps.innerHTML="";if(premios.length){let on=document.createElement("option");on.value="on";on.textContent="Auto: "+premios.join(" / ");ps.appendChild(on);let off=document.createElement("option");off.value="off";off.textContent="Off";ps.appendChild(off);ps.value="on";ps.disabled=false}else{let off=document.createElement("option");off.value="off";off.textContent="No premios for this style";ps.appendChild(off);ps.value="off";ps.disabled=true}let hasSpecials=r.bonuses.some(b=>b[0]==="chuchazo"||b[0]==="capicu"),sr=$("specialsRow"),sm=$("specialsMode");if(sr)sr.classList.toggle("hidden",!hasSpecials);if(sm){sm.innerHTML="";let on=document.createElement("option");on.value="on";on.textContent="On (Chuchazo + Capicú count)";sm.appendChild(on);let off=document.createElement("option");off.value="off";off.textContent="Off";sm.appendChild(off);sm.value="on";sm.disabled=!hasSpecials}renderBonusOptions();renderQuickScoreButtons()}
 function renderBonusOptions(){let r=activeRule(),bt=$("bonusType"),sm=$("specialsMode"),specialsOff=sm&&sm.value==="off";bt.innerHTML="";r.bonuses.forEach(b=>{if(specialsOff&&(b[0]==="chuchazo"||b[0]==="capicu"))return;let o=document.createElement("option");o.value=b[0];o.dataset.points=b[2];o.innerHTML=b[2]?`${b[1]} +${b[2]}`:b[1];bt.appendChild(o)});bonusChanged()}
 function specialsEnabled(){let sm=$("specialsMode");return !sm||sm.disabled||sm.value!=="off"}
@@ -1025,9 +1070,11 @@ function hydrateSessionState(val){
   if(rs!==lastAppliedSessionRuleSet){applyRuleSet(rs,false);lastAppliedSessionRuleSet=rs}
   if(st.team1Name!==undefined&&document.activeElement!==$("team1Name"))$("team1Name").value=st.team1Name;
   if(st.team2Name!==undefined&&document.activeElement!==$("team2Name"))$("team2Name").value=st.team2Name;
-  if(st.targetScore!==undefined)$("targetScore").value=st.targetScore;
-  if(st.premiosMode!==undefined)$("premiosMode").value=st.premiosMode;
-  if(st.specialsMode!==undefined)$("specialsMode").value=st.specialsMode;
+  // Same "don't yank it out from under them" guard the name fields already had — another
+  // player's update shouldn't reset a dropdown you're in the middle of using.
+  if(st.targetScore!==undefined&&document.activeElement!==$("targetScore"))$("targetScore").value=st.targetScore;
+  if(st.premiosMode!==undefined&&document.activeElement!==$("premiosMode"))$("premiosMode").value=st.premiosMode;
+  if(st.specialsMode!==undefined&&document.activeElement!==$("specialsMode"))$("specialsMode").value=st.specialsMode;
   renderBonusOptions();
   state.selectedRuleSet=rs;state.regionConfirmed=true;state.gameStarted=!!st.gameStarted;
   applySetupVisibility();
