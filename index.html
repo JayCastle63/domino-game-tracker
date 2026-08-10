@@ -1642,13 +1642,29 @@ function dgBoardLayout(board){
   // Right side (including the opening tile itself, at local origin) grows the normal way.
   let rightSide=dgLayoutChain(board.slice(startIdx));
   // Left side is laid out with the exact same "always grows toward +x" logic — a leftward
-  // chain is just a mirror image of a rightward one — then flipped into place: x negated,
-  // and goingRight inverted so a tile's pip-orientation still matches its true screen side.
+  // chain is just a mirror image of a rightward one — then flipped into place by negating x.
+  //
+  // goingRight is deliberately NOT inverted here. It only feeds the pip-orientation flip, and
+  // two inversions cancel: this chain is walked in reverse (so .right, not .left, faces the
+  // tile before it) AND its positions get mirrored. Inverting it made a tile's far half face
+  // the salida — that's what drew a 4 touching a 6 while the underlying data matched fine.
   let leftSide=dgLayoutChain(board.slice(0,startIdx+1).slice().reverse())
     .slice(1)
-    .map(p=>({...p,x:-p.x,goingRight:!p.goingRight}))
+    .map(p=>({...p,x:-p.x}))
     .reverse();
-  return [...leftSide,...rightSide];
+  let all=[...leftSide,...rightSide];
+  // Every tile's `right` value faces the NEXT tile in board order and `left` faces the
+  // previous one — that's the invariant dgPlayTile maintains. So derive each tile's
+  // on-screen orientation from where its next neighbour actually sits, rather than from
+  // the goingRight flag the layout walk happened to leave behind. The walk direction and
+  // the screen direction disagree on the mirrored left side (and disagree differently for
+  // its horizontal vs vertical runs), which is what drew a 4 touching a 6.
+  for(let i=0;i<all.length;i++){
+    let cur=all[i],nxt=all[i+1],prv=all[i-1];
+    cur.nx=nxt?nxt.x-cur.x:0; cur.ny=nxt?nxt.y-cur.y:0;
+    cur.px=prv?prv.x-cur.x:0; cur.py=prv?prv.y-cur.y:0;
+  }
+  return all;
 }
 function dgBoardHtml(board){
   if(!board.length)return '<div class="small" style="color:#cfe3d5">Empty table — someone leads</div>';
@@ -1663,12 +1679,24 @@ function dgBoardHtml(board){
   let offX=halfSpan+DG_TILE_LEN/2+PAD,offY=-minY+DG_TILE_LEN/2+PAD;
   let boardW=halfSpan*2+DG_TILE_LEN+PAD*2,boardH=(maxY-minY)+DG_TILE_LEN+PAD*2;
   let tiles=layout.map(p=>{
-    // Each tile's "left" value always faces the previous tile in the chain and "right" faces
-    // the next one. Rotating 90° for a downward run correctly puts "left" on top — but a
-    // horizontal run walking leftward needs the tile mirrored too, or "left"/"right" land on
-    // the wrong screen side and the touching pips stop matching at the seam.
-    let rotate=p.isDouble?(p.horizontal?90:0):(p.horizontal?0:90);
-    let flip=p.horizontal&&!p.isDouble&&!p.goingRight;
+    // "left" faces the previous tile, "right" faces the next. Unrotated a tile reads
+    // left|right; rotate(90) puts left on top, rotate(-90) puts left on the bottom.
+    //
+    // Orient from whichever neighbour actually lies along this tile's own axis. A tile at a
+    // bracket corner has its next neighbour sitting perpendicular to it, so that neighbour
+    // says nothing about which way to face — fall back to the previous one there. Doubles
+    // sit crosswise to the run and need no direction at all, both halves being equal.
+    let rotate,flip=false;
+    if(p.isDouble){rotate=p.horizontal?90:0}
+    else if(p.horizontal){
+      rotate=0;
+      if(p.nx)flip=p.nx<0;          // right faces next
+      else if(p.px)flip=p.px>0;     // left faces previous
+    }else{
+      if(p.ny)rotate=p.ny>0?90:-90; // right faces next
+      else if(p.py)rotate=p.py<0?90:-90; // left faces previous
+      else rotate=90;
+    }
     let left=p.x+offX-DG_TILE_LEN/2,top=p.y+offY-DG_TILE_WID/2;
     return `<div data-key="${p.tile._key}" style="position:absolute;left:${left}px;top:${top}px;transform:rotate(${rotate}deg)${flip?" scaleX(-1)":""}">${tileHtml(p.tile.left,p.tile.right,false)}</div>`;
   }).join("");
